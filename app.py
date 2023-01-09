@@ -97,6 +97,13 @@ def main():
 
     #  ########################################################################
     mode = 0
+    # デバッグモードとの切り替え用フラグ
+    debugmode = True
+
+    ret,image = cap.read()
+    size=image.shape
+    paint_canvas = np.zeros(size,dtype=np.uint8)#
+    paint_canvas.fill(255)#白で埋めた画像を用意
 
     while True:
         fps = cvFpsCalc.get()
@@ -105,6 +112,8 @@ def main():
         key = cv.waitKey(10)
         if key == 27:  # ESC
             break
+        if key&0xFF == ord('r'):
+            debugmode = not debugmode
         number, mode = select_mode(key, mode)
 
         # カメラキャプチャ #####################################################
@@ -113,7 +122,7 @@ def main():
             break
         image = cv.flip(image, 1)  # ミラー表示
         debug_image = copy.deepcopy(image)
-
+        
         # 検出実施 #############################################################
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
@@ -141,10 +150,14 @@ def main():
 
                 # ハンドサイン分類
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
+                point_landmark = [0,0]
                 if hand_sign_id == 2:  # 指差しサイン
-                    point_history.append(landmark_list[8])  # 人差指座標
-                else:
-                    point_history.append([0, 0])
+                    point_landmark = landmark_list[8]# 人差指座標
+                elif hand_sign_id==1: #グーの形のサイン
+                    point_landmark = landmark_list[4]#親指の先 
+                elif hand_sign_id==0: #パーの形のサイン
+                    point_landmark = landmark_list[9]# 中指の付け根                    
+                point_history.append(point_landmark)
 
                 # フィンガージェスチャー分類
                 finger_gesture_id = 0
@@ -159,6 +172,14 @@ def main():
                     finger_gesture_history).most_common()
 
                 # 描画
+                if(hand_sign_id==0):
+                    pass #パーだったら何もしない（ポインター的なものを表示する必要はあり）
+                elif(hand_sign_id==1):
+                    paint_canvas = draw_latest_point(paint_canvas ,point_history,(255,255,255))
+                    #cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（白で線を描く、白はマスクで消されるので透過される）
+                elif(hand_sign_id==2):
+                    paint_canvas = draw_latest_point(paint_canvas , point_history,(0,0,0))
+                    #cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは黒で線を描く
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
                 debug_image = draw_info_text(
@@ -173,9 +194,21 @@ def main():
 
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
+        
+        #paint_canvasをマスク画像に変換できるようにグレースケールにしてる
+        monochrome_image = cv.cvtColor(paint_canvas,cv.COLOR_BGR2GRAY)
+        ret,mask = cv.threshold(monochrome_image,1,255,cv.THRESH_BINARY)
+
+        image = cv.bitwise_and(image,image,mask=mask)
+        image_src = cv.cvtColor(image,cv.COLOR_BGR2RGB)
+        image_src = draw_info(image_src,fps,mode,number)
 
         # 画面反映 #############################################################
-        cv.imshow('Hand Gesture Recognition', debug_image)
+        #rキーで切り替えできる
+        if(debugmode):
+            cv.imshow('Hand Gesture Recognition', debug_image)
+        else:
+            cv.imshow('Hand Gesture Recognition',image_src)
 
     cap.release()
     cv.destroyAllWindows()
@@ -521,6 +554,14 @@ def draw_point_history(image, point_history):
 
     return image
 
+#point_historyの一番最後（最新の点）のみに点を描画する関数
+def draw_latest_point(image,point_history,color):
+    length = len(point_history)
+    x=point_history[length-1][0]
+    y=point_history[length-1][1]
+    if x!=0 and y!=0:
+        cv.circle(image,(x,y),10,color,-1)
+    return image
 
 def draw_info(image, fps, mode, number):
     cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
