@@ -104,6 +104,8 @@ def main():
     size=image.shape
     paint_canvas = np.zeros(size,dtype=np.uint8)#
     paint_canvas.fill(255)#白で埋めた画像を用意
+    
+    
 
     while True:
         fps = cvFpsCalc.get()
@@ -203,12 +205,24 @@ def main():
         image_src = cv.cvtColor(image,cv.COLOR_BGR2RGB)
         image_src = draw_info(image_src,fps,mode,number)
 
+        #ラベルの描画(B,G,R)
+        lavel_canvas = cv.rectangle(image_src, (0, 270), (700, 640), (200, 200, 200), thickness=-1)
+        #sizeは環境依存
+
+        #ペンの色
+        #cv.circle(image_src, (200, 300), 10, (0,0,0), thickness=-1, lineType=cv.LINE_8, shift=0)
+
+
         # 画面反映 #############################################################
         #rキーで切り替えできる
         if(debugmode):
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
             cv.imshow('Hand Gesture Recognition',image_src)
+
+    
+
+    
 
     cap.release()
     cv.destroyAllWindows()
