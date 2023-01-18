@@ -16,6 +16,30 @@ from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
 
+class Pen:
+    def __init__(self):
+        self.color = (0, 0, 255)  # ペンの色(BGR)
+        self.erase_color = (0, 0, 0)  # ペンの消しゴムの色(paint_canvasの背景と同じ色)
+        self.thickness = 10  # ペンの太さ
+
+    # def __init__(self,color,thickness):
+        # self.color = color
+        # self.erase_color=(0,0,0)
+        # self.thickness = thickness
+
+    def setColor(self, color):
+        self.color = color
+
+    def setThickness(self, thickness):
+        self.thickness = thickness
+
+
+class Button:
+    def __init__(self):
+        self.left_top = [0, 0]
+        self.right_botom = [0, 0]
+
+
 def get_args():
     parser = argparse.ArgumentParser()
 
@@ -43,6 +67,7 @@ def main():
     args = get_args()
 
     cap_device = args.device
+    print("cap_device == "+str(cap_device))
     cap_width = args.width
     cap_height = args.height
 
@@ -98,12 +123,13 @@ def main():
     #  ########################################################################
     mode = 0
     # デバッグモードとの切り替え用フラグ
-    debugmode = True
+    debugmode = False
 
-    ret,image = cap.read()
-    size=image.shape
-    paint_canvas = np.zeros(size,dtype=np.uint8)#
-    paint_canvas.fill(255)#白で埋めた画像を用意
+    ret, image = cap.read()
+    size = image.shape
+    print(size)
+    paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
+    pen = Pen()  # ペンのインスタンス生成
 
     while True:
         fps = cvFpsCalc.get()
@@ -112,7 +138,7 @@ def main():
         key = cv.waitKey(10)
         if key == 27:  # ESC
             break
-        if key&0xFF == ord('r'):
+        elif key & 0xFF == ord('r'):
             debugmode = not debugmode
         number, mode = select_mode(key, mode)
 
@@ -122,7 +148,7 @@ def main():
             break
         image = cv.flip(image, 1)  # ミラー表示
         debug_image = copy.deepcopy(image)
-        
+
         # 検出実施 #############################################################
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
@@ -150,13 +176,15 @@ def main():
 
                 # ハンドサイン分類
                 hand_sign_id = keypoint_classifier(pre_processed_landmark_list)
-                point_landmark = [0,0]
+                point_landmark = [0, 0]
                 if hand_sign_id == 2:  # 指差しサイン
-                    point_landmark = landmark_list[8]# 人差指座標
-                elif hand_sign_id==1: #グーの形のサイン
-                    point_landmark = landmark_list[4]#親指の先 
-                elif hand_sign_id==0: #パーの形のサイン
-                    point_landmark = landmark_list[9]# 中指の付け根                    
+                    point_landmark = landmark_list[8]  # 人差指座標
+                elif hand_sign_id == 1:  # グーの形のサイン
+                    point_landmark = landmark_list[4]  # 親指の先
+
+                    print(landmark_list[4])
+                elif hand_sign_id == 0:  # パーの形のサイン
+                    point_landmark = landmark_list[9]  # 中指の付け根
                 point_history.append(point_landmark)
 
                 # フィンガージェスチャー分類
@@ -172,14 +200,16 @@ def main():
                     finger_gesture_history).most_common()
 
                 # 描画
-                if(hand_sign_id==0):
-                    pass #パーだったら何もしない（ポインター的なものを表示する必要はあり）
-                elif(hand_sign_id==1):
-                    paint_canvas = draw_latest_point(paint_canvas ,point_history,(255,255,255))
-                    #cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（白で線を描く、白はマスクで消されるので透過される）
-                elif(hand_sign_id==2):
-                    paint_canvas = draw_latest_point(paint_canvas , point_history,(0,0,0))
-                    #cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは黒で線を描く
+                if (hand_sign_id == 0):
+                    pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
+                elif (hand_sign_id == 1):
+                    paint_canvas = draw_latest_point(
+                        paint_canvas, point_history, pen.thickness, pen.erase_color)
+                    # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
+                elif (hand_sign_id == 2):
+                    paint_canvas = draw_latest_point(
+                        paint_canvas, point_history, pen.thickness, pen.color)
+                    # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
                 debug_image = draw_info_text(
@@ -194,21 +224,28 @@ def main():
 
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
-        
-        #paint_canvasをマスク画像に変換できるようにグレースケールにしてる
-        monochrome_image = cv.cvtColor(paint_canvas,cv.COLOR_BGR2GRAY)
-        ret,mask = cv.threshold(monochrome_image,1,255,cv.THRESH_BINARY)
 
-        image = cv.bitwise_and(image,image,mask=mask)
-        image_src = cv.cvtColor(image,cv.COLOR_BGR2RGB)
-        image_src = draw_info(image_src,fps,mode,number)
+        # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
+        paint_canvas2gray = cv.cvtColor(
+            paint_canvas, cv.COLOR_BGR2GRAY)  # 黒背景に黒以外の色で線を描く
+        ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
+        mask_inv = cv.bitwise_not(mask)  # ビット反転して白背景にする
 
+        image_src = cv.bitwise_and(
+            image, image, mask=mask_inv)  # 画像に線の部分を黒抜きした画像
+        paint_canvas = cv.bitwise_and(paint_canvas, paint_canvas, mask=mask)
+
+        dst = cv.add(image_src, paint_canvas)
+
+        game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
+
+        game_image = draw_info(game_image, fps, mode, number)
         # 画面反映 #############################################################
-        #rキーで切り替えできる
-        if(debugmode):
+        # rキーで切り替えできる
+        if (debugmode):
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
-            cv.imshow('Hand Gesture Recognition',image_src)
+            cv.imshow('Hand Gesture Recognition', game_image)
 
     cap.release()
     cv.destroyAllWindows()
@@ -225,6 +262,23 @@ def select_mode(key, mode):
     if key == 104:  # h
         mode = 2
     return number, mode
+
+
+def process_menu(coord, pen):
+    if (coord[1] >= 400):
+        pass
+    else:
+        pass
+
+
+def calc_circle_corner(center, radius):
+    left_top = [0, 0]
+    right_bottom = [0, 0]
+    left_top[0] = center[0]-radius  # 左上の角のy
+    left_top[1] = center[1]-radius  # 左上の角のx
+    right_bottom[0] = center[0]+radius  # 右下の角のy
+    right_bottom[1] = center[1]+radius  # 右下の角のx
+    return left_top, right_bottom
 
 
 def calc_bounding_rect(image, landmarks):
@@ -554,14 +608,17 @@ def draw_point_history(image, point_history):
 
     return image
 
-#point_historyの一番最後（最新の点）のみに点を描画する関数
-def draw_latest_point(image,point_history,color):
+# point_historyの一番最後（最新の点）のみに点を描画する関数
+
+
+def draw_latest_point(image, point_history, thickness, color):
     length = len(point_history)
-    x=point_history[length-1][0]
-    y=point_history[length-1][1]
-    if x!=0 and y!=0:
-        cv.circle(image,(x,y),10,color,-1)
+    x = point_history[length-1][0]
+    y = point_history[length-1][1]
+    if x != 0 and y != 0:
+        cv.circle(image, (x, y), thickness, color, -1)
     return image
+
 
 def draw_info(image, fps, mode, number):
     cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
