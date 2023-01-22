@@ -116,6 +116,7 @@ def main():
     # 座標履歴 #################################################################
     history_length = 16
     point_history = deque(maxlen=history_length)
+    hand_gesture_history = deque(maxlen=2)
 
     # フィンガージェスチャー履歴 ################################################
     finger_gesture_history = deque(maxlen=history_length)
@@ -179,13 +180,16 @@ def main():
                 point_landmark = [0, 0]
                 if hand_sign_id == 2:  # 指差しサイン
                     point_landmark = landmark_list[8]  # 人差指座標
+
                 elif hand_sign_id == 1:  # グーの形のサイン
                     point_landmark = landmark_list[4]  # 親指の先
 
-                    print(landmark_list[4])
                 elif hand_sign_id == 0:  # パーの形のサイン
                     point_landmark = landmark_list[9]  # 中指の付け根
                 point_history.append(point_landmark)
+                hand_gesture_history.append(hand_sign_id)
+
+                print(point_landmark)
 
                 # フィンガージェスチャー分類
                 finger_gesture_id = 0
@@ -203,12 +207,14 @@ def main():
                 if (hand_sign_id == 0):
                     pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
                 elif (hand_sign_id == 1):
-                    paint_canvas = draw_latest_point(
+                    if (hand_gesture_history[0] == 1):
+                        paint_canvas = draw_latest_point_line(
                         paint_canvas, point_history, pen.thickness, pen.erase_color)
                     # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
                 elif (hand_sign_id == 2):
-                    paint_canvas = draw_latest_point(
-                        paint_canvas, point_history, pen.thickness, pen.color)
+                    if (hand_gesture_history[0] == 2):
+                        paint_canvas = draw_latest_point_line(
+                            paint_canvas, point_history, pen.thickness, pen.color)
                     # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
@@ -617,6 +623,17 @@ def draw_latest_point(image, point_history, thickness, color):
     y = point_history[length-1][1]
     if x != 0 and y != 0:
         cv.circle(image, (x, y), thickness, color, -1)
+    return image
+
+
+def draw_latest_point_line(image, point_history, thickness, color):
+    length = len(point_history)
+    if (length >= 2):
+        if (point_history[length-2] != [0,0] and point_history[length-2] != point_history[length-1]):
+            cv.line(image, (tuple(
+                point_history[length-1])), tuple(point_history[length-2]), color, thickness)
+    
+    print(point_history[length-2],point_history[length-1])
     return image
 
 
