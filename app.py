@@ -18,7 +18,7 @@ from model import PointHistoryClassifier
 
 class Pen:
     def __init__(self):
-        self.color = (0, 0, 255)  # ペンの色(BGR)
+        self.color = (0, 0, 255)  # ペンの色(RGB)
         self.erase_color = (0, 0, 0)  # ペンの消しゴムの色(paint_canvasの背景と同じ色)
         self.thickness = 10  # ペンの太さ
 
