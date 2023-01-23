@@ -4,6 +4,7 @@ import csv
 import copy
 import argparse
 import itertools
+import time
 from collections import Counter
 from collections import deque
 
@@ -128,6 +129,13 @@ def main():
 
     ret, image = cap.read()
     size = image.shape
+
+    # タイマー変数 ############################################################
+    sec = timer = 30  # タイマー秒数
+    previous_UNIX_time = 0  # 初期値0
+    timer_flag = True
+    #########################################################################
+
     print(size)
     paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
     pen = Pen()  # ペンのインスタンス生成
@@ -180,10 +188,8 @@ def main():
                 point_landmark = [0, 0]
                 if hand_sign_id == 2:  # 指差しサイン
                     point_landmark = landmark_list[8]  # 人差指座標
-
                 elif hand_sign_id == 1:  # グーの形のサイン
                     point_landmark = landmark_list[4]  # 親指の先
-
                 elif hand_sign_id == 0:  # パーの形のサイン
                     point_landmark = landmark_list[9]  # 中指の付け根
                 point_history.append(point_landmark)
@@ -216,6 +222,7 @@ def main():
                         paint_canvas = draw_latest_point_line(
                             paint_canvas, point_history, pen.thickness, pen.color)
                     # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
+
                 debug_image = draw_bounding_rect(use_brect, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
                 debug_image = draw_info_text(
@@ -228,10 +235,24 @@ def main():
         else:
             point_history.append([0, 0])
 
+        # タイマー処理 ######################################################
+
+        current_UNIX_time = time.time()
+
+        timer_flag, timer, previous_UNIX_time = timer_countdown(timer_flag, timer, current_UNIX_time,
+                                                                previous_UNIX_time)
+        if not timer_flag:
+            timer = sec
+
+        timer_str = str(timer)
+        debug_image = draw_timer(debug_image, timer_str)
+        ###################################################################
+
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
 
         # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
+
         paint_canvas2gray = cv.cvtColor(
             paint_canvas, cv.COLOR_BGR2GRAY)  # 黒背景に黒以外の色で線を描く
         ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
@@ -248,6 +269,7 @@ def main():
         game_image = draw_info(game_image, fps, mode, number)
         # 画面反映 #############################################################
         # rキーで切り替えできる
+
         if (debugmode):
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
@@ -606,6 +628,31 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
     return image
 
 
+def timer_countdown(flag, timer, current_UNIX_time, previous_UNIX_time):
+    if flag:
+        if timer <= 0:  # タイマー終了時
+            timer = 0
+            previous_UNIX_time == 0  # 変数を元に戻す
+            flag = False
+        elif previous_UNIX_time == 0:  # タイマー起動後1度目のループ時
+            previous_UNIX_time = time.time()
+        else:
+            pass
+
+        if current_UNIX_time - previous_UNIX_time >= 1:
+            timer = timer - 1
+            previous_UNIX_time = time.time()
+
+    return flag, timer, previous_UNIX_time
+
+
+def draw_timer(image, timer):
+    cv.putText(image, timer, (100, 100),
+               cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4, cv.LINE_AA)  # ここの引数を変えると色・場所・フォント等変更可
+
+    return image
+
+
 def draw_point_history(image, point_history):
     for index, point in enumerate(point_history):
         if point[0] != 0 and point[1] != 0:
@@ -615,8 +662,6 @@ def draw_point_history(image, point_history):
     return image
 
 # point_historyの一番最後（最新の点）のみに点を描画する関数
-
-
 def draw_latest_point(image, point_history, thickness, color):
     length = len(point_history)
     x = point_history[length-1][0]
@@ -624,7 +669,6 @@ def draw_latest_point(image, point_history, thickness, color):
     if x != 0 and y != 0:
         cv.circle(image, (x, y), thickness, color, -1)
     return image
-
 
 def draw_latest_point_line(image, point_history, thickness, color):
     length = len(point_history)
