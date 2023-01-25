@@ -194,15 +194,22 @@ def main():
 
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
-        
-        #paint_canvasをマスク画像に変換できるようにグレースケールにしてる
-        monochrome_image = cv.cvtColor(paint_canvas,cv.COLOR_BGR2GRAY)
-        ret,mask = cv.threshold(monochrome_image,1,255,cv.THRESH_BINARY)
 
-        image = cv.bitwise_and(image,image,mask=mask)
-        image_src = cv.cvtColor(image,cv.COLOR_BGR2RGB)
-        image_src = draw_info(image_src,fps,mode,number)
+        # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
+        paint_canvas2gray = cv.cvtColor(
+            paint_canvas, cv.COLOR_BGR2GRAY)  # 黒背景に黒以外の色で線を描く
+        ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
+        mask_inv = cv.bitwise_not(mask)  # ビット反転して白背景にする
 
+        image_src = cv.bitwise_and(
+            image, image, mask=mask_inv)  # 画像に線の部分を黒抜きした画像
+        paint_canvas = cv.bitwise_and(paint_canvas, paint_canvas, mask=mask)
+
+        dst = cv.add(image_src, paint_canvas)
+
+        game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
+
+        game_image = draw_info(game_image, fps, mode, number)
         # 画面反映 #############################################################
         #rキーで切り替えできる
         if(debugmode):
@@ -212,6 +219,11 @@ def main():
 
     cap.release()
     cv.destroyAllWindows()
+
+def draw_image(image):
+    color = (0, 255, 128)
+    cv.rectangle(image, (0,0), (100,80), color, -1)
+    return image
 
 
 def select_mode(key, mode):
