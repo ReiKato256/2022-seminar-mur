@@ -278,39 +278,6 @@ def main():
     cap.release()
     cv.destroyAllWindows()
 
-def draw_UI_in_game(image):
-    white_color = (255, 255, 255)
-    black_color = (0, 0, 0)
-
-    image2 = image.copy()
-    #透明化する図形を記述
-    cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
-    weight = 0.5
-    image3 = cv.addWeighted(image, weight, image2, 1-weight, 0)
-    #以下には透明化しない図形を記述
-    #ペンの太さを変えるボタン
-    cv.rectangle(image3, (70,530), (170, 630), white_color, -1)
-    cv.circle(image3, (120,675), 15, black_color, -1)
-    cv.rectangle(image3, (230,530), (330, 630), white_color, -1)
-    cv.circle(image3, (280,675), 25, black_color, -1)
-
-    #赤ペンへの変更ボタン
-    cv.rectangle(image3, (450, 530), (550, 630), (0, 0, 255), -1)
-    cv.rectangle(image3, (450, 530), (550, 630), black_color)
-
-    #青ペンへの変更ボタン
-    cv.rectangle(image3, (600, 530), (700, 630), (255, 0, 0), -1)
-    cv.rectangle(image3, (600, 530), (700, 630), black_color)
-
-    #消しゴムボタン
-    cv.rectangle(image3, (800, 530), (900, 630), white_color, -1)
-    cv.rectangle(image3, (800, 530), (900, 630), black_color)
-
-    #ペンボタン
-    cv.rectangle(image3, (950, 530), (1050, 630), black_color, -1)
-    return image3
-
-
 def select_mode(key, mode):
     number = -1
     if 48 <= key <= 57:  # 0 ~ 9
@@ -733,7 +700,10 @@ def draw_info(image, fps, mode, number):
 def draw_UI_in_game(image):
     white_color = (255, 255, 255)
     black_color = (0, 0, 0)
-
+    origin_Width = 100
+    origin_height = 530
+    button_size = 100
+    button_range = 180
     image2 = image.copy()
     #透明化する図形を記述
     cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
@@ -741,25 +711,25 @@ def draw_UI_in_game(image):
     image3 = cv.addWeighted(image, weight, image2, 1-weight, 0)
     #以下には透明化しない図形を記述
     #ペンの太さを変えるボタン
-    cv.rectangle(image3, (70,530), (170, 630), white_color, -1)
-    cv.circle(image3, (120,675), 15, black_color, -1)
-    cv.rectangle(image3, (230,530), (330, 630), white_color, -1)
-    cv.circle(image3, (280,675), 25, black_color, -1)
+    cv.rectangle(image3, (origin_Width, origin_height), (origin_Width + button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + 50, origin_height + 145), 15, black_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range ,origin_height), (origin_Width + button_range + button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + button_range + 50, origin_height + 145), 25, black_color, -1)
 
     #赤ペンへの変更ボタン
-    cv.rectangle(image3, (450, 530), (550, 630), (0, 0, 255), -1)
-    cv.rectangle(image3, (450, 530), (550, 630), black_color)
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), (0, 0, 255), -1)
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), black_color)
 
     #青ペンへの変更ボタン
-    cv.rectangle(image3, (600, 530), (700, 630), (255, 0, 0), -1)
-    cv.rectangle(image3, (600, 530), (700, 630), black_color)
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), (255, 0, 0), -1)
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), black_color)
 
     #消しゴムボタン
-    cv.rectangle(image3, (800, 530), (900, 630), white_color, -1)
-    cv.rectangle(image3, (800, 530), (900, 630), black_color)
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), white_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), black_color)
 
     #ペンボタン
-    cv.rectangle(image3, (950, 530), (1050, 630), black_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range*5, origin_height), (origin_Width + button_range*5 + button_size, origin_height + button_size), black_color, -1)
     return image3
 
 if __name__ == '__main__':
