@@ -5,8 +5,10 @@ import copy
 import argparse
 import itertools
 import time
+import math
 from collections import Counter
 from collections import deque
+from PIL import ImageFont,ImageDraw,Image
 
 import cv2 as cv
 import numpy as np
@@ -17,25 +19,33 @@ from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
 
+buttons_in_start_scene = []
+buttons_in_playing_scene = []
+buttons_in_judge_scene = []
+buttons_in_result_scene=[]
+game_modes = ("start", "playing", "judge", "result")
+game_mode = game_modes[0]
 class Pen:
     def __init__(self):
         self.color = (0, 0, 255)  # ペンの色(RGB)
         self.erase_color = (0, 0, 0)  # ペンの消しゴムの色(paint_canvasの背景と同じ色)
         self.thickness = 10  # ペンの太さ
 
-    def setColor(self, color:tuple[int,int,int])->None:
+    def setColor(self, color: tuple[int, int, int]) -> None:
         self.color = color
 
-    def setThickness(self, thickness:int)->None:
+    def setThickness(self, thickness: int) -> None:
         self.thickness = thickness
 
 
 class Button:
-    def __init__(self,left_top_coord:tuple[int,int],right_bottom_coord:tuple[int,int],func:any):
+    def __init__(self, left_top_coord: tuple[int, int], right_bottom_coord: tuple[int, int], shape: str, color: tuple[int, int, int], thickness: int, func: any):
         self.left_top = left_top_coord
         self.right_bottom = right_bottom_coord
+        self.shape = shape #rectangle,circle
+        self.color = color #(int,int,int)
+        self.thickness = thickness #
         self.func = func
-    
 
 
 def get_args():
@@ -61,6 +71,12 @@ def get_args():
 
 
 def main():
+    global buttons_in_start_scene
+    global buttons_in_playing_scene
+    global buttons_in_judge_scene
+    global buttons_in_result_scene
+    global game_modes
+    global game_mode
     # 引数解析 #################################################################
     args = get_args()
 
@@ -132,16 +148,24 @@ def main():
     previous_UNIX_time = 0  # 初期値0
     timer_flag = True
     #########################################################################
-    #UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
-    
+    # UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
 
     print(size)
     paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
     pen = Pen()  # ペンのインスタンス生成
+    
 
-    test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
-    test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
-    buttons_in_game = [test_button1,test_button2]
+    # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
+    # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
+    # buttons_in_game = [test_button1,test_button2]
+
+
+    start_button = Button((400, 560 ), (860, 660), "rectangle",
+                          (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    buttons_in_start_scene = [start_button]
+    buttons_in_playing_scene = []
+    buttons_in_judge_scene = []
+    buttons_in_result_scene=[]
 
     while True:
         fps = cvFpsCalc.get()
@@ -216,11 +240,11 @@ def main():
                 if (hand_sign_id == 0):
                     pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
                 elif (hand_sign_id == 1):
-                    if (hand_gesture_history[0]==0):
-                        process_menu(point_landmark,buttons_in_game,pen)
+                    if (hand_gesture_history[0] == 0):
+                        process_menu(point_landmark,pen)
                     elif (hand_gesture_history[0] == 1):
                         paint_canvas = draw_latest_point_line(
-                        paint_canvas, point_history, pen.thickness, pen.erase_color)
+                            paint_canvas, point_history, pen.thickness, pen.erase_color)
                     # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
                 elif (hand_sign_id == 2):
                     if (hand_gesture_history[0] == 2):
@@ -271,8 +295,11 @@ def main():
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
         game_image = draw_info(game_image, fps, mode, number)
-        game_image = draw_UI_in_game(game_image)
-        game_image = draw_cursor(game_image,point_history,history_length)
+
+        #game_image = draw_UI_in_game(game_image)
+        game_image = scene_transition(game_image)
+
+        game_image = draw_cursor(game_image, point_history, history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
 
@@ -280,10 +307,11 @@ def main():
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
             cv.imshow('Hand Gesture Recognition', game_image)
-            #cv.imshow('Hand Gesture Recognition', paint_canvas)
+            # cv.imshow('Hand Gesture Recognition', paint_canvas)
 
     cap.release()
     cv.destroyAllWindows()
+
 
 def select_mode(key, mode):
     number = -1
@@ -298,16 +326,38 @@ def select_mode(key, mode):
     return number, mode
 
 
-def process_menu(coord,buttons,pen):
-    for button in buttons:
-        if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
-            button.func(pen)
+def process_menu(coord,pen):
+    global buttons_in_start_scene
+    global buttons_in_playing_scene
+    global buttons_in_judge_scene
+    global buttons_in_result_scene
+    global game_mode
+    global game_modes
+    if coord[0]!=0: #0,0以外の場所でのみ作用
+        if game_mode == game_modes[0]:
+            for button in buttons_in_start_scene:
+                if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
+                    button.func(1)
+        elif game_mode == game_modes[1]:
+            for button in buttons_in_playing_scene:
+                if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
+                    button.func(pen)
 
-#あくまでテスト用
-def draw_test_UI(image,buttons:Button):
+        elif game_mode == game_modes[2]:
+            pass
+        elif game_mode == game_modes[3]:
+            pass
+
+    
+# あくまでテスト用
+
+
+def draw_test_UI(image, buttons: Button):
     for button in buttons:
-        cv.rectangle(image,button.left_top,button.right_bottom,(255,255,255),-1)
+        cv.rectangle(image, button.left_top,
+                     button.right_bottom, (255, 255, 255), -1)
     return image
+
 
 def calc_circle_corner(center, radius):
     left_top = [0, 0]
@@ -317,6 +367,17 @@ def calc_circle_corner(center, radius):
     right_bottom[0] = center[0]+radius  # 右下の角のy
     right_bottom[1] = center[1]+radius  # 右下の角のx
     return left_top, right_bottom
+
+
+def calc_circle_center_from_corners(left_top: tuple[int, int], right_bottom: tuple[int, int]):
+    center_x = math.floor((left_top[0] + right_bottom[0])/2)
+    center_y = math.floor((left_top[1] + right_bottom[1])/2)
+    return (center_x, center_y)
+
+
+def calc_cicle_radius_from_corners(left, right):
+    radius = math.floor((left+right)/2)
+    return radius
 
 
 def calc_bounding_rect(image, landmarks):
@@ -671,9 +732,11 @@ def draw_point_history(image, point_history):
 
     return image
 
-def draw_cursor(image,point_history,history_length):
+
+def draw_cursor(image, point_history, history_length):
     cursor_number = 5
-    cursor_points = itertools.islice(point_history,history_length-cursor_number,None)
+    cursor_points = itertools.islice(
+        point_history, history_length-cursor_number, None)
     for index, point in enumerate(cursor_points):
         if point[0] != 0 and point[1] != 0:
             cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
@@ -682,6 +745,8 @@ def draw_cursor(image,point_history,history_length):
     return image
 
 # point_historyの一番最後（最新の点）のみに点を描画する関数
+
+
 def draw_latest_point(image, point_history, thickness, color):
     length = len(point_history)
     x = point_history[length-1][0]
@@ -690,14 +755,15 @@ def draw_latest_point(image, point_history, thickness, color):
         cv.circle(image, (x, y), thickness, color, -1)
     return image
 
+
 def draw_latest_point_line(image, point_history, thickness, color):
     length = len(point_history)
     if (length >= 2):
-        if (point_history[length-2] != [0,0] and point_history[length-2] != point_history[length-1]):
+        if (point_history[length-2] != [0, 0] and point_history[length-2] != point_history[length-1]):
             cv.line(image, (tuple(
                 point_history[length-1])), tuple(point_history[length-2]), color, thickness)
-    
-    print(point_history[length-2],point_history[length-1])
+
+    print(point_history[length-2], point_history[length-1])
     return image
 
 
@@ -717,7 +783,68 @@ def draw_info(image, fps, mode, number):
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
                        cv.LINE_AA)
     return image
-    
+
+
+def change_gamemode(number):
+    global game_mode
+    global game_modes
+    game_mode = game_modes[number]
+
+
+def scene_transition(image):
+    global buttons_in_start_scene
+    global buttons_in_playing_scene
+    global buttons_in_judge_scene
+    global buttons_in_result_scene
+    global game_modes
+    global game_mode
+
+    if game_mode == game_modes[0]:
+        return draw_UI_in_start_scene(image)
+    elif game_mode == game_modes[1]:
+        return draw_UI_in_game(image)
+    elif game_mode == game_modes[2]:
+        return image
+    elif game_mode == game_modes[3]:
+        return image
+
+
+def draw_buttons(image, buttons: Button):
+    for button in buttons:
+        if (button.shape == "rectangle"):
+            cv.rectangle(image, button.left_top, button.right_bottom,
+                         button.color, button.thickness)
+        elif (button.shape == "circle"):
+            center = calc_circle_center_from_corners(
+                button.left_top, button.right_bottom)
+            radius = calc_cicle_radius_from_corners(
+                button.left_top, button.right_bottom)
+            cv.circle(image, center, radius, button.color, button.thickness)
+        else:
+            print("button's shape is not designated")
+            cv.rectangle(image, button.left_top, button.right_bottom,
+                         button.color, button.thickness)
+
+    return image
+
+
+def draw_UI_background(image):
+    # 透明化する図形を記述
+    image2 = image.copy()
+    cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
+    weight = 0.5
+    image3 = cv.addWeighted(image, weight, image2, 1-weight, -1)
+    return image3
+
+
+def draw_UI_in_start_scene(image):
+    global buttons_in_start_scene
+    image = draw_UI_background(image)
+    image = draw_buttons(image,buttons_in_start_scene)
+    image = putText_japanese(image,"ゲームをはじめる！",(400,560),50,(0,0,0))
+    return image
+
+
 def draw_UI_in_game(image):
     white_color = (255, 255, 255)
     black_color = (0, 0, 0)
@@ -725,33 +852,58 @@ def draw_UI_in_game(image):
     origin_height = 530
     button_size = 100
     button_range = 180
-    image2 = image.copy()
-    #透明化する図形を記述
-    cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
-    weight = 0.5
-    image3 = cv.addWeighted(image, weight, image2, 1-weight, 0)
-    #以下には透明化しない図形を記述
-    #ペンの太さを変えるボタン
-    cv.rectangle(image3, (origin_Width, origin_height), (origin_Width + button_size, origin_height + button_size), white_color, -1)
-    cv.circle(image3, (origin_Width + 50, origin_height + 145), 15, black_color, -1)
-    cv.rectangle(image3, (origin_Width + button_range ,origin_height), (origin_Width + button_range + button_size, origin_height + button_size), white_color, -1)
-    cv.circle(image3, (origin_Width + button_range + 50, origin_height + 145), 25, black_color, -1)
+    image3 = draw_UI_background(image)
+    # 以下には透明化しない図形を記述
+    # ペンの太さを変えるボタン
+    cv.rectangle(image3, (origin_Width, origin_height), (origin_Width +
+                 button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + 50, origin_height + 145),
+              15, black_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range, origin_height), (origin_Width +
+                 button_range + button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + button_range + 50,
+              origin_height + 145), 25, black_color, -1)
 
-    #赤ペンへの変更ボタン
-    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), (0, 0, 255), -1)
-    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), black_color)
+    # 赤ペンへの変更ボタン
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width +
+                 button_range*2 + button_size, origin_height + button_size), (0, 0, 255), -1)
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width +
+                 button_range*2 + button_size, origin_height + button_size), black_color)
 
-    #青ペンへの変更ボタン
-    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), (255, 0, 0), -1)
-    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), black_color)
+    # 青ペンへの変更ボタン
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width +
+                 button_range*3 + button_size, origin_height + button_size), (255, 0, 0), -1)
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width +
+                 button_range*3 + button_size, origin_height + button_size), black_color)
 
-    #消しゴムボタン
-    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), white_color, -1)
-    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), black_color)
+    # 消しゴムボタン
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width +
+                 button_range*4 + button_size, origin_height + button_size), white_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width +
+                 button_range*4 + button_size, origin_height + button_size), black_color)
 
-    #ペンボタン
-    cv.rectangle(image3, (origin_Width + button_range*5, origin_height), (origin_Width + button_range*5 + button_size, origin_height + button_size), black_color, -1)
+    # ペンボタン
+    cv.rectangle(image3, (origin_Width + button_range*5, origin_height), (origin_Width +
+                 button_range*5 + button_size, origin_height + button_size), black_color, -1)
     return image3
+
+# 日本語を描画する関数
+def putText_japanese(image,text,point,size,color):
+    #Notoフォントとする
+    font = ImageFont.truetype("fonts/NotoSansJP-Light.otf", size)
+
+    #imgをndarrayからPILに変換
+    img_pil = Image.fromarray(image)
+
+    #drawインスタンス生成
+    draw = ImageDraw.Draw(img_pil)
+
+    #テキスト描画
+    draw.text(point, text, fill=color, font=font)
+
+    #PILからndarrayに変換して返す
+    return np.array(img_pil)
+
 
 if __name__ == '__main__':
     main()
