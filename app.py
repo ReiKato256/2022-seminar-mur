@@ -42,8 +42,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=960)
-    parser.add_argument("--height", help='cap height', type=int, default=540)
+    parser.add_argument("--width", help='cap width', type=int, default=1920)
+    parser.add_argument("--height", help='cap height', type=int, default=1080)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -270,11 +270,9 @@ def main():
         dst = cv.add(image_src, paint_canvas)
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
-
-        game_image = draw_test_UI(game_image,buttons_in_game)#
-        
-        game_image = draw_cursor(game_image,point_history,history_length)
         game_image = draw_info(game_image, fps, mode, number)
+        game_image = draw_UI_in_game(game_image)
+        game_image = draw_cursor(game_image,point_history,history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
 
@@ -286,12 +284,6 @@ def main():
 
     cap.release()
     cv.destroyAllWindows()
-
-def draw_image(image):
-    color = (0, 255, 128)
-    cv.rectangle(image, (0,0), (100,80), color, -1)
-    return image
-
 
 def select_mode(key, mode):
     number = -1
@@ -725,7 +717,41 @@ def draw_info(image, fps, mode, number):
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
                        cv.LINE_AA)
     return image
+    
+def draw_UI_in_game(image):
+    white_color = (255, 255, 255)
+    black_color = (0, 0, 0)
+    origin_Width = 100
+    origin_height = 530
+    button_size = 100
+    button_range = 180
+    image2 = image.copy()
+    #透明化する図形を記述
+    cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
+    weight = 0.5
+    image3 = cv.addWeighted(image, weight, image2, 1-weight, 0)
+    #以下には透明化しない図形を記述
+    #ペンの太さを変えるボタン
+    cv.rectangle(image3, (origin_Width, origin_height), (origin_Width + button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + 50, origin_height + 145), 15, black_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range ,origin_height), (origin_Width + button_range + button_size, origin_height + button_size), white_color, -1)
+    cv.circle(image3, (origin_Width + button_range + 50, origin_height + 145), 25, black_color, -1)
 
+    #赤ペンへの変更ボタン
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), (0, 0, 255), -1)
+    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width + button_range*2 + button_size, origin_height + button_size), black_color)
+
+    #青ペンへの変更ボタン
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), (255, 0, 0), -1)
+    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width + button_range*3 + button_size, origin_height + button_size), black_color)
+
+    #消しゴムボタン
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), white_color, -1)
+    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width + button_range*4 + button_size, origin_height + button_size), black_color)
+
+    #ペンボタン
+    cv.rectangle(image3, (origin_Width + button_range*5, origin_height), (origin_Width + button_range*5 + button_size, origin_height + button_size), black_color, -1)
+    return image3
 
 if __name__ == '__main__':
     main()
