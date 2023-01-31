@@ -23,22 +23,19 @@ class Pen:
         self.erase_color = (0, 0, 0)  # ペンの消しゴムの色(paint_canvasの背景と同じ色)
         self.thickness = 10  # ペンの太さ
 
-    # def __init__(self,color,thickness):
-        # self.color = color
-        # self.erase_color=(0,0,0)
-        # self.thickness = thickness
-
-    def setColor(self, color):
+    def setColor(self, color:tuple[int,int,int])->None:
         self.color = color
 
-    def setThickness(self, thickness):
+    def setThickness(self, thickness:int)->None:
         self.thickness = thickness
 
 
 class Button:
-    def __init__(self):
-        self.left_top = [0, 0]
-        self.right_botom = [0, 0]
+    def __init__(self,left_top_coord:tuple[int,int],right_bottom_coord:tuple[int,int],func:any):
+        self.left_top = left_top_coord
+        self.right_bottom = right_bottom_coord
+        self.func = func
+    
 
 
 def get_args():
@@ -135,10 +132,16 @@ def main():
     previous_UNIX_time = 0  # 初期値0
     timer_flag = True
     #########################################################################
+    #UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
+    
 
     print(size)
     paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
     pen = Pen()  # ペンのインスタンス生成
+
+    test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
+    test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
+    buttons_in_game = [test_button1,test_button2]
 
     while True:
         fps = cvFpsCalc.get()
@@ -213,7 +216,9 @@ def main():
                 if (hand_sign_id == 0):
                     pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
                 elif (hand_sign_id == 1):
-                    if (hand_gesture_history[0] == 1):
+                    if (hand_gesture_history[0]==0):
+                        process_menu(point_landmark,buttons_in_game,pen)
+                    elif (hand_gesture_history[0] == 1):
                         paint_canvas = draw_latest_point_line(
                         paint_canvas, point_history, pen.thickness, pen.erase_color)
                     # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
@@ -266,6 +271,9 @@ def main():
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
 
+        game_image = draw_test_UI(game_image,buttons_in_game)#
+        
+        game_image = draw_cursor(game_image,point_history,history_length)
         game_image = draw_info(game_image, fps, mode, number)
         # 画面反映 #############################################################
         # rキーで切り替えできる
@@ -274,6 +282,7 @@ def main():
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
             cv.imshow('Hand Gesture Recognition', game_image)
+            #cv.imshow('Hand Gesture Recognition', paint_canvas)
 
     cap.release()
     cv.destroyAllWindows()
@@ -297,12 +306,16 @@ def select_mode(key, mode):
     return number, mode
 
 
-def process_menu(coord, pen):
-    if (coord[1] >= 400):
-        pass
-    else:
-        pass
+def process_menu(coord,buttons,pen):
+    for button in buttons:
+        if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
+            button.func(pen)
 
+#あくまでテスト用
+def draw_test_UI(image,buttons:Button):
+    for button in buttons:
+        cv.rectangle(image,button.left_top,button.right_bottom,(255,255,255),-1)
+    return image
 
 def calc_circle_corner(center, radius):
     left_top = [0, 0]
@@ -660,6 +673,16 @@ def draw_timer(image, timer):
 
 def draw_point_history(image, point_history):
     for index, point in enumerate(point_history):
+        if point[0] != 0 and point[1] != 0:
+            cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
+                      (152, 251, 152), 2)
+
+    return image
+
+def draw_cursor(image,point_history,history_length):
+    cursor_number = 5
+    cursor_points = itertools.islice(point_history,history_length-cursor_number,None)
+    for index, point in enumerate(cursor_points):
         if point[0] != 0 and point[1] != 0:
             cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
                       (152, 251, 152), 2)
