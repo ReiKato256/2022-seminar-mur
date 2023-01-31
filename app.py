@@ -8,7 +8,7 @@ import time
 import math
 from collections import Counter
 from collections import deque
-from PIL import ImageFont,ImageDraw,Image
+from PIL import ImageFont, ImageDraw, Image
 
 import cv2 as cv
 import numpy as np
@@ -18,13 +18,26 @@ from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
 
+from Picture_subject import picture_subject
 
 buttons_in_start_scene = []
+buttons_in_subject_hide_scene = []
+buttons_in_subject_open_scene = []
 buttons_in_playing_scene = []
 buttons_in_judge_scene = []
-buttons_in_result_scene=[]
-game_modes = ("start", "playing", "judge", "result")
+buttons_in_result_scene = []
+game_modes = ("start", "subject_hide", "subject_open",
+              "playing", "judge", "dokidoki", "result")
 game_mode = game_modes[0]
+picture_subject_in_game = picture_subject()
+white=(255,255,255)
+text_color=(0,0,0)
+
+paint_canvas_reset = True
+
+sec = timer = 180  # タイマー秒数
+timer_flag = False
+
 class Pen:
     def __init__(self):
         self.color = (0, 0, 255)  # ペンの色(RGB)
@@ -42,9 +55,9 @@ class Button:
     def __init__(self, left_top_coord: tuple[int, int], right_bottom_coord: tuple[int, int], shape: str, color: tuple[int, int, int], thickness: int, func: any):
         self.left_top = left_top_coord
         self.right_bottom = right_bottom_coord
-        self.shape = shape #rectangle,circle
-        self.color = color #(int,int,int)
-        self.thickness = thickness #
+        self.shape = shape  # rectangle,circle
+        self.color = color  # (int,int,int)
+        self.thickness = thickness
         self.func = func
 
 
@@ -72,11 +85,19 @@ def get_args():
 
 def main():
     global buttons_in_start_scene
+    global buttons_in_subject_hide_scene
+    global buttons_in_subject_open_scene
     global buttons_in_playing_scene
     global buttons_in_judge_scene
     global buttons_in_result_scene
+
     global game_modes
     global game_mode
+    global picture_subject_in_game
+    global paint_canvas_reset
+    global timer
+    global sec
+    global timer_flag
     # 引数解析 #################################################################
     args = get_args()
 
@@ -144,30 +165,45 @@ def main():
     size = image.shape
 
     # タイマー変数 ############################################################
-    sec = timer = 30  # タイマー秒数
+
     previous_UNIX_time = 0  # 初期値0
-    timer_flag = True
     #########################################################################
     # UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
 
     print(size)
-    paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
-    pen = Pen()  # ペンのインスタンス生成
     
+    pen = Pen()  # ペンのインスタンス生成
 
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
     # buttons_in_game = [test_button1,test_button2]
 
-
-    start_button = Button((400, 560 ), (860, 660), "rectangle",
+    start_button = Button((400, 560), (860, 660), "rectangle",
                           (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+
     buttons_in_start_scene = [start_button]
-    buttons_in_playing_scene = []
-    buttons_in_judge_scene = []
-    buttons_in_result_scene=[]
+    show_subject_button = Button((400, 560), (860, 660), "rectangle",
+                                 (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    buttons_in_subject_hide_scene = [show_subject_button]
+    confirm_subject_button = Button((400, 560), (860, 660), "rectangle",
+                                    (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    buttons_in_subject_open_scene = [confirm_subject_button]
+    finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "circle",
+                           (255, 0, 0), -1, (lambda x: change_gamemode(x)))
+    buttons_in_playing_scene = [finish_button]
+    wrong_button = Button((0, 300), (200, size[0]), "rectangle",
+                          (255, 0, 0), -1, (lambda x: change_gamemode(x)))
+    correct_button = Button((size[1]-200, 300), (size[1], size[0]), "rectangle",
+                            (0, 0, 255), -1, (lambda x: change_gamemode(x)))
+    buttons_in_judge_scene = [wrong_button, correct_button]
+    back_to_title_button = Button((400, 560), (860, 660), "rectangle",
+                                  (255, 255, 255), -1, (lambda x: finish_game(x)))
+    buttons_in_result_scene = [back_to_title_button]
 
     while True:
+        if paint_canvas_reset:
+            paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
+            paint_canvas_reset = False
         fps = cvFpsCalc.get()
 
         # キー処理(ESC：終了) #################################################
@@ -241,7 +277,7 @@ def main():
                     pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
                 elif (hand_sign_id == 1):
                     if (hand_gesture_history[0] == 0):
-                        process_menu(point_landmark,pen)
+                        process_menu(point_landmark, pen)
                     elif (hand_gesture_history[0] == 1):
                         paint_canvas = draw_latest_point_line(
                             paint_canvas, point_history, pen.thickness, pen.erase_color)
@@ -274,7 +310,7 @@ def main():
             timer = sec
 
         timer_str = str(timer)
-        debug_image = draw_timer(debug_image, timer_str)
+        debug_image = draw_timer(debug_image,timer,(100,100),1)
         ###################################################################
 
         debug_image = draw_point_history(debug_image, point_history)
@@ -296,13 +332,13 @@ def main():
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
         game_image = draw_info(game_image, fps, mode, number)
 
-        #game_image = draw_UI_in_game(game_image)
+        # game_image = draw_UI_in_game(game_image)
         game_image = scene_transition(game_image)
 
         game_image = draw_cursor(game_image, point_history, history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
-
+        print(game_mode)
         if (debugmode):
             cv.imshow('Hand Gesture Recognition', debug_image)
         else:
@@ -326,29 +362,49 @@ def select_mode(key, mode):
     return number, mode
 
 
-def process_menu(coord,pen):
+def process_menu(coord, pen):
     global buttons_in_start_scene
     global buttons_in_playing_scene
     global buttons_in_judge_scene
     global buttons_in_result_scene
     global game_mode
     global game_modes
-    if coord[0]!=0: #0,0以外の場所でのみ作用
+    global paint_canvas_reset
+    print(game_mode)
+    print(game_modes)
+    if coord[0] != 0:  # 0,0以外の場所でのみ作用
         if game_mode == game_modes[0]:
             for button in buttons_in_start_scene:
-                if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
-                    button.func(1)
+                judge_coord(button, coord, 1)
         elif game_mode == game_modes[1]:
-            for button in buttons_in_playing_scene:
-                if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
-                    button.func(pen)
-
+            for button in buttons_in_subject_hide_scene:
+                judge_coord(button, coord, 2)
         elif game_mode == game_modes[2]:
+            for button in buttons_in_subject_open_scene:
+                judge_coord(button, coord, 3)
+        elif game_mode == game_modes[3]:  # playing
+            for button in buttons_in_playing_scene:
+                if button.left_top[1]<300:  # 強制終了ボタン
+                    judge_coord(button, coord, 4)
+                else:
+                    judge_coord(button, coord, pen)
+        elif game_mode == game_modes[4]:
+            for button in buttons_in_judge_scene:
+                judge_coord(button, coord, 5)
+        elif game_mode == game_modes[5]:
             pass
-        elif game_mode == game_modes[3]:
-            pass
+        elif game_mode == game_modes[6]:
+            for button in buttons_in_result_scene:
+                judge_coord(button, coord, 0)
+                
 
-    
+
+
+# 座標がボタンの座標内に存在するならば、ボタンの関数に第３引数を与えて実行する関数
+def judge_coord(button: Button, coord: tuple[int, int], argument):
+    if button.left_top[0] <= coord[0] <= button.right_bottom[0] and button.left_top[1] <= coord[1] <= button.right_bottom[1]:
+        button.func(argument)
+
 # あくまでテスト用
 
 
@@ -717,9 +773,9 @@ def timer_countdown(flag, timer, current_UNIX_time, previous_UNIX_time):
     return flag, timer, previous_UNIX_time
 
 
-def draw_timer(image, timer):
-    cv.putText(image, timer, (100, 100),
-               cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4, cv.LINE_AA)  # ここの引数を変えると色・場所・フォント等変更可
+def draw_timer(image, timer, coord, font_size):
+    cv.putText(image, str(timer), coord,
+               cv.FONT_HERSHEY_SIMPLEX, font_size, (0, 0, 0), 4, cv.LINE_AA)  # ここの引数を変えると色・場所・フォント等変更可
 
     return image
 
@@ -791,6 +847,12 @@ def change_gamemode(number):
     game_mode = game_modes[number]
 
 
+def finish_game(number):
+    global paint_canvas_reset
+    paint_canvas_reset=True
+    change_gamemode(number)
+
+
 def scene_transition(image):
     global buttons_in_start_scene
     global buttons_in_playing_scene
@@ -798,15 +860,43 @@ def scene_transition(image):
     global buttons_in_result_scene
     global game_modes
     global game_mode
+    global sec
+    global timer
+    global timer_flag
 
     if game_mode == game_modes[0]:
+        if not timer_flag:
+            timer = 180
         return draw_UI_in_start_scene(image)
     elif game_mode == game_modes[1]:
-        return draw_UI_in_game(image)
+        return draw_UI_in_subject_hide(image)
     elif game_mode == game_modes[2]:
-        return image
+        return draw_UI_in_subject_open(image)
     elif game_mode == game_modes[3]:
-        return image
+        if timer==0:
+            change_gamemode(4)
+        elif not timer_flag:
+            timer_flag = True
+        else:
+            pass
+        return draw_UI_in_game(image)
+    elif game_mode == game_modes[4]:
+        if timer_flag:
+            timer_flag=False
+        return draw_UI_in_judge_scene(image)
+    elif game_mode == game_modes[5]:
+        if timer ==0:
+            change_gamemode(6)
+        elif not timer_flag:
+            timer = 5
+            timer_flag=True
+        else:
+            pass
+        return draw_UI_in_dokidoki_scene(image)
+    elif game_mode==game_modes[6]:
+        if not timer_flag:
+            timer_flag=False
+        return draw_UI_in_result_scene(image)
 
 
 def draw_buttons(image, buttons: Button):
@@ -818,7 +908,7 @@ def draw_buttons(image, buttons: Button):
             center = calc_circle_center_from_corners(
                 button.left_top, button.right_bottom)
             radius = calc_cicle_radius_from_corners(
-                button.left_top, button.right_bottom)
+                button.left_top[1], button.right_bottom[1])
             cv.circle(image, center, radius, button.color, button.thickness)
         else:
             print("button's shape is not designated")
@@ -840,68 +930,87 @@ def draw_UI_background(image):
 def draw_UI_in_start_scene(image):
     global buttons_in_start_scene
     image = draw_UI_background(image)
-    image = draw_buttons(image,buttons_in_start_scene)
-    image = putText_japanese(image,"ゲームをはじめる！",(400,560),50,(0,0,0))
+    image = draw_buttons(image, buttons_in_start_scene)
+    image = putText_japanese(image, "ゲームをはじめる！", (400, 560), 50, (0, 0, 0))
+    return image
+
+
+def draw_UI_in_subject_hide(image):
+    global buttons_in_subject_hide_scene
+    image = draw_UI_background(image)
+    image = draw_buttons(image, buttons_in_subject_hide_scene)
+    image = putText_japanese(image, "ボタンをつかむとテーマが表示されます。",
+                             (50, 250), 40, (0, 0, 0))
+    image = putText_japanese(
+        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, (0, 0, 0))
+    return image
+
+
+def draw_UI_in_subject_open(image):
+    global buttons_in_subject_open_scene
+    global picture_subject_in_game
+    global text_color
+    image = draw_UI_background(image)
+    image = draw_buttons(image, buttons_in_subject_open_scene)
+    image = putText_japanese(image, "お題は ", (50, 50), 40, text_color)
+    image = putText_japanese(
+        image, picture_subject_in_game, (50, 100), 80, text_color)
+    image = putText_japanese(image, " です。", (50, 200),40,text_color)
+    image = putText_japanese(image, "ボタンをつかむとゲームが開始されます。",
+                             (50, 250), 40, text_color)
+    image = putText_japanese(
+        image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color)
     return image
 
 
 def draw_UI_in_game(image):
-    white_color = (255, 255, 255)
-    black_color = (0, 0, 0)
-    origin_Width = 100
-    origin_height = 530
-    button_size = 100
-    button_range = 180
-    image3 = draw_UI_background(image)
-    # 以下には透明化しない図形を記述
-    # ペンの太さを変えるボタン
-    cv.rectangle(image3, (origin_Width, origin_height), (origin_Width +
-                 button_size, origin_height + button_size), white_color, -1)
-    cv.circle(image3, (origin_Width + 50, origin_height + 145),
-              15, black_color, -1)
-    cv.rectangle(image3, (origin_Width + button_range, origin_height), (origin_Width +
-                 button_range + button_size, origin_height + button_size), white_color, -1)
-    cv.circle(image3, (origin_Width + button_range + 50,
-              origin_height + 145), 25, black_color, -1)
+    global buttons_in_playing_scene
+    global timer
+    image = draw_UI_background(image)
+    image = draw_buttons(image, buttons_in_playing_scene)
+    image = draw_timer(image,timer,(640,50),1)
+    return image
 
-    # 赤ペンへの変更ボタン
-    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width +
-                 button_range*2 + button_size, origin_height + button_size), (0, 0, 255), -1)
-    cv.rectangle(image3, (origin_Width + button_range*2, origin_height), (origin_Width +
-                 button_range*2 + button_size, origin_height + button_size), black_color)
 
-    # 青ペンへの変更ボタン
-    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width +
-                 button_range*3 + button_size, origin_height + button_size), (255, 0, 0), -1)
-    cv.rectangle(image3, (origin_Width + button_range*3, origin_height), (origin_Width +
-                 button_range*3 + button_size, origin_height + button_size), black_color)
+def draw_UI_in_judge_scene(image):
+    global buttons_in_judge_scene
+    # image = draw_UI_background(image)
+    image = draw_buttons(image, buttons_in_judge_scene)
+    return image
 
-    # 消しゴムボタン
-    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width +
-                 button_range*4 + button_size, origin_height + button_size), white_color, -1)
-    cv.rectangle(image3, (origin_Width + button_range*4, origin_height), (origin_Width +
-                 button_range*4 + button_size, origin_height + button_size), black_color)
+def draw_UI_in_dokidoki_scene(image):
+    global timer
+    image = draw_timer(image,timer,(640,360),3)
+    return image
 
-    # ペンボタン
-    cv.rectangle(image3, (origin_Width + button_range*5, origin_height), (origin_Width +
-                 button_range*5 + button_size, origin_height + button_size), black_color, -1)
-    return image3
+def draw_UI_in_result_scene(image):
+    global buttons_in_result_scene
+    global text_color
+    # image=draw_UI_background(image)
+    image = putText_japanese(image, "お題は ", (50, 50), 40, text_color)
+    image = putText_japanese(
+        image, picture_subject_in_game, (50, 100), 80, text_color)
+    image = putText_japanese(image, " でした。", (50, 200),40,text_color)
+    image = draw_buttons(image, buttons_in_result_scene)
+    return image
 
 # 日本語を描画する関数
-def putText_japanese(image,text,point,size,color):
-    #Notoフォントとする
+
+
+def putText_japanese(image, text, point, size, color):
+    # Notoフォントとする
     font = ImageFont.truetype("fonts/NotoSansJP-Light.otf", size)
 
-    #imgをndarrayからPILに変換
+    # imgをndarrayからPILに変換
     img_pil = Image.fromarray(image)
 
-    #drawインスタンス生成
+    # drawインスタンス生成
     draw = ImageDraw.Draw(img_pil)
 
-    #テキスト描画
+    # テキスト描画
     draw.text(point, text, fill=color, font=font)
 
-    #PILからndarrayに変換して返す
+    # PILからndarrayに変換して返す
     return np.array(img_pil)
 
 

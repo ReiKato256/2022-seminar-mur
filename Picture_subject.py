@@ -1,5 +1,5 @@
 import random
-def Picture_subject():
+def picture_subject():
     #お題のリストを作成
     themelist = []
     with open("ThemeBox.txt","r",encoding='utf-8') as file:
