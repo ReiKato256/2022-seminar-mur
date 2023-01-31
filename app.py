@@ -30,13 +30,14 @@ game_modes = ("start", "subject_hide", "subject_open",
               "playing", "judge", "dokidoki", "result")
 game_mode = game_modes[0]
 picture_subject_in_game = picture_subject()
-white=(255,255,255)
-text_color=(0,0,0)
+white = (255, 255, 255)
+text_color = (0, 0, 0)
 
 paint_canvas_reset = True
 
 sec = timer = 180  # タイマー秒数
 timer_flag = False
+
 
 class Pen:
     def __init__(self):
@@ -171,7 +172,7 @@ def main():
     # UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
 
     print(size)
-    
+
     pen = Pen()  # ペンのインスタンス生成
 
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
@@ -202,7 +203,8 @@ def main():
 
     while True:
         if paint_canvas_reset:
-            paint_canvas = np.zeros(size, dtype=np.uint8)  # 画像と同じサイズの黒で埋めた画像を用意
+            # 画像と同じサイズの黒で埋めた画像を用意
+            paint_canvas = np.zeros(size, dtype=np.uint8)
             paint_canvas_reset = False
         fps = cvFpsCalc.get()
 
@@ -310,7 +312,7 @@ def main():
             timer = sec
 
         timer_str = str(timer)
-        debug_image = draw_timer(debug_image,timer,(100,100),1)
+        debug_image = draw_timer(debug_image, timer, (100, 100), 1)
         ###################################################################
 
         debug_image = draw_point_history(debug_image, point_history)
@@ -384,7 +386,7 @@ def process_menu(coord, pen):
                 judge_coord(button, coord, 3)
         elif game_mode == game_modes[3]:  # playing
             for button in buttons_in_playing_scene:
-                if button.left_top[1]<300:  # 強制終了ボタン
+                if button.left_top[1] < 300:  # 強制終了ボタン
                     judge_coord(button, coord, 4)
                 else:
                     judge_coord(button, coord, pen)
@@ -396,8 +398,6 @@ def process_menu(coord, pen):
         elif game_mode == game_modes[6]:
             for button in buttons_in_result_scene:
                 judge_coord(button, coord, 0)
-                
-
 
 
 # 座標がボタンの座標内に存在するならば、ボタンの関数に第３引数を与えて実行する関数
@@ -849,7 +849,7 @@ def change_gamemode(number):
 
 def finish_game(number):
     global paint_canvas_reset
-    paint_canvas_reset=True
+    paint_canvas_reset = True
     change_gamemode(number)
 
 
@@ -873,7 +873,7 @@ def scene_transition(image):
     elif game_mode == game_modes[2]:
         return draw_UI_in_subject_open(image)
     elif game_mode == game_modes[3]:
-        if timer==0:
+        if timer == 0:
             change_gamemode(4)
         elif not timer_flag:
             timer_flag = True
@@ -882,20 +882,20 @@ def scene_transition(image):
         return draw_UI_in_game(image)
     elif game_mode == game_modes[4]:
         if timer_flag:
-            timer_flag=False
+            timer_flag = False
         return draw_UI_in_judge_scene(image)
     elif game_mode == game_modes[5]:
-        if timer ==0:
+        if timer == 0:
             change_gamemode(6)
         elif not timer_flag:
             timer = 5
-            timer_flag=True
+            timer_flag = True
         else:
             pass
         return draw_UI_in_dokidoki_scene(image)
-    elif game_mode==game_modes[6]:
+    elif game_mode == game_modes[6]:
         if not timer_flag:
-            timer_flag=False
+            timer_flag = False
         return draw_UI_in_result_scene(image)
 
 
@@ -955,7 +955,7 @@ def draw_UI_in_subject_open(image):
     image = putText_japanese(image, "お題は ", (50, 50), 40, text_color)
     image = putText_japanese(
         image, picture_subject_in_game, (50, 100), 80, text_color)
-    image = putText_japanese(image, " です。", (50, 200),40,text_color)
+    image = putText_japanese(image, " です。", (50, 200), 40, text_color)
     image = putText_japanese(image, "ボタンをつかむとゲームが開始されます。",
                              (50, 250), 40, text_color)
     image = putText_japanese(
@@ -968,7 +968,7 @@ def draw_UI_in_game(image):
     global timer
     image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_playing_scene)
-    image = draw_timer(image,timer,(640,50),1)
+    image = draw_timer(image, timer, (640, 50), 1)
     return image
 
 
@@ -978,10 +978,12 @@ def draw_UI_in_judge_scene(image):
     image = draw_buttons(image, buttons_in_judge_scene)
     return image
 
+
 def draw_UI_in_dokidoki_scene(image):
     global timer
-    image = draw_timer(image,timer,(640,360),3)
+    image = draw_timer(image, timer, (640, 360), 3)
     return image
+
 
 def draw_UI_in_result_scene(image):
     global buttons_in_result_scene
@@ -990,7 +992,7 @@ def draw_UI_in_result_scene(image):
     image = putText_japanese(image, "お題は ", (50, 50), 40, text_color)
     image = putText_japanese(
         image, picture_subject_in_game, (50, 100), 80, text_color)
-    image = putText_japanese(image, " でした。", (50, 200),40,text_color)
+    image = putText_japanese(image, " でした。", (50, 200), 40, text_color)
     image = draw_buttons(image, buttons_in_result_scene)
     return image
 
