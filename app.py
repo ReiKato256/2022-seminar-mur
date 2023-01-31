@@ -24,9 +24,9 @@ class Pen:
         self.thickness = 10  # ペンの太さ
 
     # def __init__(self,color,thickness):
-        # self.color = color
-        # self.erase_color=(0,0,0)
-        # self.thickness = thickness
+    # self.color = color
+    # self.erase_color=(0,0,0)
+    # self.thickness = thickness
 
     def setColor(self, color):
         self.color = color
@@ -45,8 +45,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=960)
-    parser.add_argument("--height", help='cap height', type=int, default=540)
+    parser.add_argument("--width", help='cap width', type=int, default=960)  # PC内蔵カメラ=640,USBカメラ=960
+    parser.add_argument("--height", help='cap height', type=int, default=540)  # PC内蔵カメラ=480,USBカメラ=480
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -68,9 +68,11 @@ def main():
     args = get_args()
 
     cap_device = args.device
-    print("cap_device == "+str(cap_device))
+    cap2_device = 1
+
+    print("cap_device == " + str(cap_device))
     cap_width = args.width
-    cap_height = args.height
+    cap_height = args.height  ## 両方のカメラの解像度を同じにするため、変数変化なし
 
     use_static_image_mode = args.use_static_image_mode
     min_detection_confidence = args.min_detection_confidence
@@ -80,8 +82,11 @@ def main():
 
     # カメラ準備 ###############################################################
     cap = cv.VideoCapture(cap_device)
+    cap2 = cv.VideoCapture(cap2_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
+    cap2.set(cv.CAP_PROP_FRAME_HEIGHT, cap_width)
+    cap2.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
     # モデルロード #############################################################
     mp_hands = mp.solutions.hands
@@ -119,8 +124,12 @@ def main():
     point_history = deque(maxlen=history_length)
     hand_gesture_history = deque(maxlen=2)
 
+    point_history2 = deque(maxlen=history_length)
+    hand_gesture_history2 = deque(maxlen=2)
+
     # フィンガージェスチャー履歴 ################################################
     finger_gesture_history = deque(maxlen=history_length)
+    finger_gesture_history2 = deque(maxlen=history_length)
 
     #  ########################################################################
     mode = 0
@@ -128,7 +137,8 @@ def main():
     debugmode = False
 
     ret, image = cap.read()
-    size = image.shape
+    ret2, image2 = cap2.read()
+    size = image.shape  ## sizeは両カメラ同じなので新規変数必要なし
 
     # タイマー変数 ############################################################
     sec = timer = 30  # タイマー秒数
@@ -153,16 +163,25 @@ def main():
 
         # カメラキャプチャ #####################################################
         ret, image = cap.read()
-        if not ret:
+        ret2, image2 = cap2.read()
+
+        if not ret and ret2:
             break
         image = cv.flip(image, 1)  # ミラー表示
+        image2 = cv.flip(image2, 1)
+
         debug_image = copy.deepcopy(image)
+        debug_image2 = copy.deepcopy(image2)
 
         # 検出実施 #############################################################
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+        image2 = cv.cvtColor(image2, cv.COLOR_BGR2RGB)
 
         image.flags.writeable = False
         results = hands.process(image)
+        image.flags.writeable = True
+        image2.flags.writeable = False
+        results2 = hands.process(image2)
         image.flags.writeable = True
 
         #  ####################################################################
@@ -215,7 +234,7 @@ def main():
                 elif (hand_sign_id == 1):
                     if (hand_gesture_history[0] == 1):
                         paint_canvas = draw_latest_point_line(
-                        paint_canvas, point_history, pen.thickness, pen.erase_color)
+                            paint_canvas, point_history, pen.thickness, pen.erase_color)
                     # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
                 elif (hand_sign_id == 2):
                     if (hand_gesture_history[0] == 2):
@@ -235,6 +254,75 @@ def main():
         else:
             point_history.append([0, 0])
 
+        if results2.multi_hand_landmarks is not None:
+            for hand_landmarks2, handedness2 in zip(results2.multi_hand_landmarks,
+                                                    results2.multi_handedness):
+                # 外接矩形の計算
+                brect2 = calc_bounding_rect(debug_image2, hand_landmarks2)
+                # ランドマークの計算
+                landmark_list2 = calc_landmark_list(debug_image2, hand_landmarks2)
+
+                # 相対座標・正規化座標への変換
+                pre_processed_landmark_list2 = pre_process_landmark(
+                    landmark_list2)
+                pre_processed_point_history_list2 = pre_process_point_history(
+                    debug_image2, point_history2)
+                # 学習データ保存
+                logging_csv(number, mode, pre_processed_landmark_list2,
+                            pre_processed_point_history_list2)
+
+                # ハンドサイン分類
+                hand_sign_id2 = keypoint_classifier(pre_processed_landmark_list2)
+                point_landmark2 = [0, 0]
+                if hand_sign_id2 == 2:  # 指差しサイン
+                    point_landmark2 = landmark_list2[8]  # 人差指座標
+                elif hand_sign_id2 == 1:  # グーの形のサイン
+                    point_landmark2 = landmark_list2[4]  # 親指の先
+                elif hand_sign_id2 == 0:  # パーの形のサイン
+                    point_landmark2 = landmark_list2[9]  # 中指の付け根
+                point_history2.append(point_landmark2)
+                hand_gesture_history2.append(hand_sign_id2)
+
+                print(point_landmark2)
+
+                # フィンガージェスチャー分類
+                finger_gesture_id2 = 0
+                point_history_len2 = len(pre_processed_point_history_list2)
+                if point_history_len2 == (history_length * 2):
+                    finger_gesture_id2 = point_history_classifier(
+                        pre_processed_point_history_list2)
+
+                # 直近検出の中で最多のジェスチャーIDを算出
+                finger_gesture_history2.append(finger_gesture_id2)
+                most_common_fg_id2 = Counter(
+                    finger_gesture_history2).most_common()
+
+                # 描画
+                if (hand_sign_id2 == 0):
+                    pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
+                elif (hand_sign_id2 == 1):
+                    if (hand_gesture_history2[0] == 1):
+                        paint_canvas = draw_latest_point_line(
+                            paint_canvas, point_history2, pen.thickness, pen.erase_color)
+                    # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
+                elif (hand_sign_id2 == 2):
+                    if (hand_gesture_history2[0] == 2):
+                        paint_canvas = draw_latest_point_line(
+                            paint_canvas, point_history2, pen.thickness, pen.color)
+                    # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
+
+                debug_image2 = draw_bounding_rect(use_brect, debug_image2, brect2)
+                debug_image2 = draw_landmarks(debug_image2, landmark_list2)
+                debug_image2 = draw_info_text(
+                    debug_image2,
+                    brect2,
+                    handedness2,
+                    keypoint_classifier_labels[hand_sign_id2],
+                    point_history_classifier_labels[most_common_fg_id2[0][0]],
+                )
+        else:
+            point_history2.append([0, 0])
+
         # タイマー処理 ######################################################
 
         current_UNIX_time = time.time()
@@ -246,10 +334,14 @@ def main():
 
         timer_str = str(timer)
         debug_image = draw_timer(debug_image, timer_str)
+        debug_image2 = draw_timer(debug_image2, timer_str)
         ###################################################################
 
         debug_image = draw_point_history(debug_image, point_history)
         debug_image = draw_info(debug_image, fps, mode, number)
+
+        debug_image2 = draw_point_history(debug_image2, point_history2)
+        debug_image2 = draw_info(debug_image2, fps, mode, number)
 
         # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
 
@@ -260,27 +352,37 @@ def main():
 
         image_src = cv.bitwise_and(
             image, image, mask=mask_inv)  # 画像に線の部分を黒抜きした画像
+        image_src2 = cv.bitwise_and(
+            image2, image2, mask=mask_inv)
+
         paint_canvas = cv.bitwise_and(paint_canvas, paint_canvas, mask=mask)
 
         dst = cv.add(image_src, paint_canvas)
+        dst2 = cv.add(image_src2, paint_canvas)
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
+        game_image2 = cv.cvtColor(dst2, cv.COLOR_BGR2RGB)
 
         game_image = draw_info(game_image, fps, mode, number)
+        game_image2 = draw_info(game_image2, fps, mode, number)
         # 画面反映 #############################################################
         # rキーで切り替えできる
 
         if (debugmode):
             cv.imshow('Hand Gesture Recognition', debug_image)
+            cv.imshow('Hand Gesture Recognition2', debug_image2)
         else:
             cv.imshow('Hand Gesture Recognition', game_image)
+            cv.imshow('Hand Gesture Recognition2', game_image2)
 
     cap.release()
+    cap2.release()
     cv.destroyAllWindows()
+
 
 def draw_image(image):
     color = (0, 255, 128)
-    cv.rectangle(image, (0,0), (100,80), color, -1)
+    cv.rectangle(image, (0, 0), (100, 80), color, -1)
     return image
 
 
@@ -307,10 +409,10 @@ def process_menu(coord, pen):
 def calc_circle_corner(center, radius):
     left_top = [0, 0]
     right_bottom = [0, 0]
-    left_top[0] = center[0]-radius  # 左上の角のy
-    left_top[1] = center[1]-radius  # 左上の角のx
-    right_bottom[0] = center[0]+radius  # 右下の角のy
-    right_bottom[1] = center[1]+radius  # 右下の角のx
+    left_top[0] = center[0] - radius  # 左上の角のy
+    left_top[1] = center[1] - radius  # 左上の角のx
+    right_bottom[0] = center[0] + radius  # 右下の角のy
+    right_bottom[1] = center[1] + radius  # 右下の角のx
     return left_top, right_bottom
 
 
@@ -666,23 +768,25 @@ def draw_point_history(image, point_history):
 
     return image
 
+
 # point_historyの一番最後（最新の点）のみに点を描画する関数
 def draw_latest_point(image, point_history, thickness, color):
     length = len(point_history)
-    x = point_history[length-1][0]
-    y = point_history[length-1][1]
+    x = point_history[length - 1][0]
+    y = point_history[length - 1][1]
     if x != 0 and y != 0:
         cv.circle(image, (x, y), thickness, color, -1)
     return image
 
+
 def draw_latest_point_line(image, point_history, thickness, color):
     length = len(point_history)
     if (length >= 2):
-        if (point_history[length-2] != [0,0] and point_history[length-2] != point_history[length-1]):
+        if (point_history[length - 2] != [0, 0] and point_history[length - 2] != point_history[length - 1]):
             cv.line(image, (tuple(
-                point_history[length-1])), tuple(point_history[length-2]), color, thickness)
-    
-    print(point_history[length-2],point_history[length-1])
+                point_history[length - 1])), tuple(point_history[length - 2]), color, thickness)
+
+    print(point_history[length - 2], point_history[length - 1])
     return image
 
 
