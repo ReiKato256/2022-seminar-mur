@@ -1027,6 +1027,9 @@ def draw_UI_in_game(image):
 def draw_UI_in_judge_scene(image):
     global buttons_in_judge_scene
     # image = draw_UI_background(image)
+    image = draw_UI_background(image)
+    image = putText_japanese(image, "答えがお題に合っていたら赤を", (370,520), 40, text_color)
+    image = putText_japanese(image, "間違っていたら青のボタンをつかんでください", (230,570), 40, text_color)
     image = draw_buttons(image, buttons_in_judge_scene)
     return image
 
