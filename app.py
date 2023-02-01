@@ -188,10 +188,10 @@ def main():
                                  (255, 255, 255), -1, (lambda x: change_gamemode(x)))
     buttons_in_subject_hide_scene = [show_subject_button]
     confirm_subject_button = Button((400, 560), (860, 660), "rectangle",
-                                    (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+                                    (255, 255, 255), -1, (lambda x: change_gamemode_with_reset(x)))
     buttons_in_subject_open_scene = [confirm_subject_button]
     finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "circle",
-                           (255, 0, 0), -1, (lambda x: change_gamemode(x)))
+                           (0, 0, 255), -1, (lambda x: change_gamemode(x)))
 
     wrong_button = Button((0, 300), (200, size[0]), "rectangle",
                           (255, 0, 0), -1, (lambda x: change_gamemode(x)))
@@ -899,10 +899,15 @@ def change_gamemode(number):
     game_mode = game_modes[number]
 
 
-def finish_game(number):
+def change_gamemode_with_reset(number):
     global paint_canvas_reset
     paint_canvas_reset = True
     change_gamemode(number)
+
+def finish_game(number):
+    global picture_subject_in_game
+    picture_subject_in_game = picture_subject()
+    change_gamemode_with_reset(number)
 
 
 def scene_transition(image):
@@ -915,6 +920,7 @@ def scene_transition(image):
     global sec
     global timer
     global timer_flag
+    global paint_canvas_reset
 
     if game_mode == game_modes[0]:
         if not timer_flag:
@@ -1020,6 +1026,7 @@ def draw_UI_in_game(image):
     global timer
     image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_playing_scene)
+    image = putText_japanese(image,"☓",(image.shape[1]-120,60),40,(255,255,255))
     image = draw_timer(image, timer, (640, 50), 1)
     return image
 
@@ -1049,6 +1056,7 @@ def draw_UI_in_result_scene(image):
         image, picture_subject_in_game, (50, 100), 80, text_color)
     image = putText_japanese(image, " でした。", (50, 200), 40, text_color)
     image = draw_buttons(image, buttons_in_result_scene)
+    image = putText_japanese(image, "最初の画面に戻る", (400, 560), 50, (0, 0, 0))
     return image
 
 
