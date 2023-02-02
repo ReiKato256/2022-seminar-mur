@@ -68,7 +68,7 @@ def main():
     args = get_args()
 
     cap_device = args.device
-    cap2_device = 1
+    cap2_device = args.device + 1
 
     print("cap_device == " + str(cap_device))
     cap_width = args.width
@@ -97,9 +97,13 @@ def main():
         min_tracking_confidence=min_tracking_confidence,
     )
 
-    keypoint_classifier = KeyPointClassifier()
+    keypoint_classifier = KeyPointClassifier('model/keypoint_classifier/keypoint_classifier.tflite', 1)
+    keypoint_classifier2 = KeyPointClassifier('model/keypoint_classifier/keypoint_classifier2.tflite', 1)  # 2クラスに増補
 
-    point_history_classifier = PointHistoryClassifier()
+    point_history_classifier = PointHistoryClassifier('model/point_history_classifier/point_history_classifier.tflite',
+                                                      0.5, 0, 1)
+    point_history_classifier2 = PointHistoryClassifier(
+        'model/point_history_classifier/point_history_classifier2.tflite', 0.5, 0, 1)  # 2クラスに増補
 
     # ラベル読み込み ###########################################################
     with open('model/keypoint_classifier/keypoint_classifier_label.csv',
@@ -272,7 +276,7 @@ def main():
                             pre_processed_point_history_list2)
 
                 # ハンドサイン分類
-                hand_sign_id2 = keypoint_classifier(pre_processed_landmark_list2)
+                hand_sign_id2 = keypoint_classifier2(pre_processed_landmark_list2)
                 point_landmark2 = [0, 0]
                 if hand_sign_id2 == 2:  # 指差しサイン
                     point_landmark2 = landmark_list2[8]  # 人差指座標
@@ -289,7 +293,7 @@ def main():
                 finger_gesture_id2 = 0
                 point_history_len2 = len(pre_processed_point_history_list2)
                 if point_history_len2 == (history_length * 2):
-                    finger_gesture_id2 = point_history_classifier(
+                    finger_gesture_id2 = point_history_classifier2(
                         pre_processed_point_history_list2)
 
                 # 直近検出の中で最多のジェスチャーIDを算出
