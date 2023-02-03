@@ -97,6 +97,14 @@ def main():
         min_tracking_confidence=min_tracking_confidence,
     )
 
+    mp_hands2 = mp.solutions.hands
+    hands2 = mp_hands2.Hands(
+        static_image_mode=use_static_image_mode,
+        max_num_hands=1,
+        min_detection_confidence=min_detection_confidence,
+        min_tracking_confidence=min_tracking_confidence,
+    )
+
     keypoint_classifier = KeyPointClassifier('model/keypoint_classifier/keypoint_classifier.tflite', 1)
     keypoint_classifier2 = KeyPointClassifier('model/keypoint_classifier/keypoint_classifier2.tflite', 1)  # 2クラスに増補
 
@@ -141,7 +149,6 @@ def main():
     debugmode = False
 
     ret, image = cap.read()
-    ret2, image2 = cap2.read()
     size = image.shape  ## sizeは両カメラ同じなので新規変数必要なし
 
     # タイマー変数 ############################################################
@@ -185,7 +192,7 @@ def main():
         results = hands.process(image)
         image.flags.writeable = True
         image2.flags.writeable = False
-        results2 = hands.process(image2)
+        results2 = hands2.process(image2)
         image.flags.writeable = True
 
         #  ####################################################################
