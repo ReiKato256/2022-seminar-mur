@@ -67,8 +67,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=1920)
-    parser.add_argument("--height", help='cap height', type=int, default=1080)
+    parser.add_argument("--width", help='cap width', type=int, default=1280)
+    parser.add_argument("--height", help='cap height', type=int, default=720)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -121,7 +121,7 @@ def main():
     cap2 = cv.VideoCapture(cap2_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
-    cap2.set(cv.CAP_PROP_FRAME_HEIGHT, cap_width)
+    cap2.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap2.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
     # モデルロード #############################################################
