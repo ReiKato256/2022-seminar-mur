@@ -6,6 +6,7 @@ import argparse
 import itertools
 import time
 import math
+import traceback
 from collections import Counter
 from collections import deque
 from PIL import ImageFont, ImageDraw, Image
@@ -67,8 +68,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=1280)
-    parser.add_argument("--height", help='cap height', type=int, default=720)
+    parser.add_argument("--width", help='cap width', type=int, default=1920)
+    parser.add_argument("--height", help='cap height', type=int, default=1080)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -200,7 +201,7 @@ def main():
         cap2.get(cv.CAP_PROP_FRAME_HEIGHT)))
 
     pen = Pen()  # ペンのインスタンス生成
-    pen2 = Pen()
+    pen2 = Pen()  # camera2用のペンのインスタンス
 
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
@@ -341,7 +342,7 @@ def main():
         image.flags.writeable = True
 
         #  ####################################################################
-        if results.multi_hand_landmarks is not None:
+        if results.multi_hand_landmarks is not None:  # camera1用
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks,
                                                   results.multi_handedness):
                 # 外接矩形の計算
@@ -412,7 +413,7 @@ def main():
         else:
             point_history.append([0, 0])
 
-        if results2.multi_hand_landmarks is not None:
+        if results2.multi_hand_landmarks is not None:  # camera2用
             for hand_landmarks2, handedness2 in zip(results2.multi_hand_landmarks,
                                                     results2.multi_handedness):
                 # 外接矩形の計算
@@ -510,10 +511,21 @@ def main():
         ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
         mask_inv = cv.bitwise_not(mask)  # ビット反転して白背景にする
 
-        image_src = cv.bitwise_and(
-            image, image, mask=mask_inv)  # 画像に線の部分を黒抜きした画像
-        image_src2 = cv.bitwise_and(
-            image2, image2, mask=mask_inv)
+        try:  # カメラ解像度の違いにより発生するエラーの処理
+            image_src = cv.bitwise_and(
+                image, image, mask=mask_inv)  # 画像に線の部分を黒抜きした画像
+            image_src2 = cv.bitwise_and(
+                image2, image2, mask=mask_inv)
+
+        except Exception as e:
+            if traceback.format_exc().find(
+                    "(-215:Assertion failed) (mtype == CV_8U || mtype == CV_8S) && _mask.sameSize(*psrc1) in function "
+                    "'cv::binary_op'") != -1:
+                print(traceback.format_exc() + "Error: カメラの解像度を統一してください。\n")
+                break
+            else:
+                print(traceback.format_exc() + "\n")
+                break
 
         paint_canvas = cv.bitwise_and(paint_canvas, paint_canvas, mask=mask)
 
