@@ -194,8 +194,13 @@ def main():
     # UIのボタンの位置 一番左上が0,0 右下にいくにつれて大きくなる
 
     print(size)
+    print("camera 1 resolution IS " + str(cap.get(cv.CAP_PROP_FRAME_WIDTH)) + " × " + str(
+        cap.get(cv.CAP_PROP_FRAME_HEIGHT)))
+    print("camera 2 resolution IS " + str(cap2.get(cv.CAP_PROP_FRAME_WIDTH)) + " × " + str(
+        cap2.get(cv.CAP_PROP_FRAME_HEIGHT)))
 
     pen = Pen()  # ペンのインスタンス生成
+    pen2 = Pen()
 
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
@@ -455,15 +460,15 @@ def main():
                     pass  # パーだったら何もしない（ポインター的なものを表示する必要はあり）
                 elif (hand_sign_id2 == 1):
                     if (hand_gesture_history2[0] == 0):
-                        process_menu(point_landmark2, pen)
+                        process_menu(point_landmark2, pen2)
                     elif (hand_gesture_history2[0] == 1):
                         paint_canvas = draw_latest_point_line(
-                            paint_canvas, point_history2, pen.thickness, pen.erase_color)
+                            paint_canvas, point_history2, pen2.thickness, pen2.erase_color)
                     # cv.circle(paint_canvas,point_landmark,10,255,-1)#グーのときは消す（黒で線を描く）
                 elif (hand_sign_id2 == 2):
                     if (hand_gesture_history2[0] == 2):
                         paint_canvas = draw_latest_point_line(
-                            paint_canvas, point_history2, pen.thickness, pen.color)
+                            paint_canvas, point_history2, pen2.thickness, pen2.color)
                     # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
 
                 debug_image2 = draw_bounding_rect(use_brect, debug_image2, brect2)
