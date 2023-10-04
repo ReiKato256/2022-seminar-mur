@@ -388,6 +388,9 @@ def main():
         dst = cv.add(image_src, paint_canvas)
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
+
+
+        game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_info(game_image, fps, mode, number)
 
         # game_image = draw_UI_in_game(game_image)
@@ -851,7 +854,8 @@ def draw_cursor(image, point_history, history_length):
         point_history, history_length-cursor_number, None)
     for index, point in enumerate(cursor_points):
         if point[0] != 0 and point[1] != 0:
-            cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
+
+            cv.circle(image, (round(point[0]*1.5), round(point[1]*1.5)), 1 + int(index / 2),
                       (152, 251, 152), 2)
 
     return image
@@ -980,18 +984,18 @@ def draw_buttons(image, buttons: Button):
     return image
 
 
-def draw_UI_background(image):
-    # 透明化する図形を記述
-    image2 = image.copy()
-    cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
-    weight = 0.5
-    image3 = cv.addWeighted(image, weight, image2, 1-weight, -1)
-    return image3
+# def draw_UI_background(image):
+#     # 透明化する図形を記述
+#     #image2 = image.copy()
+#     #cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
+#     #weight = 0.5
+#     #image3 = cv.addWeighted(image, weight, image2, 1-weight, -1)
+#     return image3
 
 
 def draw_UI_in_start_scene(image):
     global buttons_in_start_scene
-    image = draw_UI_background(image)
+    # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_start_scene)
     image = putText_japanese(image, "ゲームをはじめる！", (400, 560), 50, (0, 0, 0))
     return image
@@ -999,7 +1003,7 @@ def draw_UI_in_start_scene(image):
 
 def draw_UI_in_subject_hide(image):
     global buttons_in_subject_hide_scene
-    image = draw_UI_background(image)
+    # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_subject_hide_scene)
     image = putText_japanese(image, "ボタンをつかむとテーマが表示されます。",
                              (50, 250), 40, (0, 0, 0))
@@ -1012,7 +1016,7 @@ def draw_UI_in_subject_open(image):
     global buttons_in_subject_open_scene
     global picture_subject_in_game
     global text_color
-    image = draw_UI_background(image)
+    # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_subject_open_scene)
     image = putText_japanese(image, "お題は ", (50, 50), 40, text_color)
     image = putText_japanese(
@@ -1028,7 +1032,7 @@ def draw_UI_in_subject_open(image):
 def draw_UI_in_game(image):
     global buttons_in_playing_scene
     global timer
-    image = draw_UI_background(image)
+    # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_playing_scene)
     image = putText_japanese(image,"☓",(image.shape[1]-120,60),40,(255,255,255))
     image = draw_timer(image, timer, (640, 50), 1)
@@ -1038,7 +1042,7 @@ def draw_UI_in_game(image):
 def draw_UI_in_judge_scene(image):
     global buttons_in_judge_scene
     # image = draw_UI_background(image)
-    image = draw_UI_background(image)
+    # image = draw_UI_background(image)
     image = putText_japanese(image, "答えがお題に合っていたら赤を", (370,520), 40, text_color)
     image = putText_japanese(image, "間違っていたら青のボタンをつかんでください", (230,570), 40, text_color)
     image = draw_buttons(image, buttons_in_judge_scene)
