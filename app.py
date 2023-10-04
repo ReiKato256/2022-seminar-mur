@@ -342,15 +342,16 @@ def main():
                             paint_canvas, point_history, pen.thickness, pen.color)
                     # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
 
-                debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-                debug_image = draw_landmarks(debug_image, landmark_list)
-                debug_image = draw_info_text(
-                    debug_image,
-                    brect,
-                    handedness,
-                    keypoint_classifier_labels[hand_sign_id],
-                    point_history_classifier_labels[most_common_fg_id[0][0]],
-                )
+                if(debugmode):
+                    debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+                    debug_image = draw_landmarks(debug_image, landmark_list)
+                    debug_image = draw_info_text(
+                        debug_image,
+                        brect,
+                        handedness,
+                        keypoint_classifier_labels[hand_sign_id],
+                        point_history_classifier_labels[most_common_fg_id[0][0]],
+                    )
         else:
             point_history.append([0, 0])
 
@@ -364,12 +365,15 @@ def main():
             timer = sec
 
         timer_str = str(timer)
-        debug_image = draw_timer(debug_image, timer, (100, 100), 1)
+        if(debugmode):
+
+            debug_image = draw_timer(debug_image, timer, (100, 100), 1)
+            debug_image = draw_point_history(debug_image, point_history)
+            debug_image = draw_info(debug_image, fps, mode, number)
+
         ###################################################################
 
-        debug_image = draw_point_history(debug_image, point_history)
-        debug_image = draw_info(debug_image, fps, mode, number)
-
+        
         # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
 
         paint_canvas2gray = cv.cvtColor(
