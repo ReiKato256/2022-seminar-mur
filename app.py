@@ -178,8 +178,7 @@ def main():
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
     # buttons_in_game = [test_button1,test_button2]
-
-    start_button = Button((400, 560), (860, 660), "rectangle",
+    start_button = Button((600, 500), (1290, 990), "rectangle",
                           (255, 255, 255), -1, (lambda x: change_gamemode(x)))
 
     buttons_in_start_scene = [start_button]
@@ -390,12 +389,11 @@ def main():
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
 
 
-        game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_info(game_image, fps, mode, number)
 
         # game_image = draw_UI_in_game(game_image)
         game_image = scene_transition(game_image)
-
+        game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_cursor(game_image, point_history, history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
@@ -997,7 +995,7 @@ def draw_UI_in_start_scene(image):
     global buttons_in_start_scene
     # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_start_scene)
-    image = putText_japanese(image, "ゲームをはじめる！", (400, 560), 50, (0, 0, 0))
+    image = putText_japanese(image, "ゲームをはじめる！", (400*1.5, 560*1.5), 50, (0, 0, 0))
     return image
 
 
