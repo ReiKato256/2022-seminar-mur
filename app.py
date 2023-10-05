@@ -196,16 +196,16 @@ def main():
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
     # buttons_in_game = [test_button1,test_button2]
-    start_button = Button((485, 480), (705, 590), "rectangle",
+    start_button = Button((460, 480), (830, 590), "rectangle",
                           (0, 0, 0), 0, (lambda x: change_gamemode(x)))
 
     buttons_in_start_scene = [start_button]
 
-    show_subject_button = Button((400, 560), (860, 660), "rectangle",
-                                 (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    show_subject_button = Button((460, 480), (830, 590), "rectangle",
+                                 (255, 255, 255), 0, (lambda x: change_gamemode(x)))
     buttons_in_subject_hide_scene = [show_subject_button]
-    confirm_subject_button = Button((400, 560), (860, 660), "rectangle",
-                                    (255, 255, 255), -1, (lambda x: change_gamemode_with_reset(x)))
+    confirm_subject_button = Button((460, 480), (830, 590), "rectangle",
+                                    (255, 255, 255), 0, (lambda x: change_gamemode_with_reset(x)))
     buttons_in_subject_open_scene = [confirm_subject_button]
     finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "circle",
                            (0, 0, 255), -1, (lambda x: change_gamemode(x)))
@@ -220,10 +220,10 @@ def main():
     buttons_in_result_scene = [back_to_title_button]
 
 
-    origin_coord = (100,530)
+    origin_coord = (80,530)
     circle_button_size = 100
     rectangle_button_size = 100
-    button_range = 150
+    button_range = 130
     #ペンのサイズを小サイズにするボタン
     smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
                             (255,255,255),-1,(lambda x: x.setThickness(7)))
@@ -408,8 +408,14 @@ def main():
 
         #スタート画面でボタンの画像を表示する
         if(game_mode==game_modes[0]):
-            start_btn_img=cv.imread("assets/Button.png")
-            game_image=pasteImg(start_btn_img,game_image,480,485)
+            start_btn_img=cv.imread("assets/start_button.png")
+            game_image=pasteImg(start_btn_img,game_image,460,480)
+        else if(game_mode==game_modes[1]):
+            next_btn_img=cv.imread("assets/next_button.png")
+            game_image=pasteImg(next_btn_img,game_image,460,480)
+        else if(game_mode==game_modes[2]):
+            next_btn_img=cv.imread("assets/next_button.png")
+            game_image=pasteImg(next_btn_img,game_image,460,480)
 
 
 
