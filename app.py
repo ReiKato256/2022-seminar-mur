@@ -196,8 +196,8 @@ def main():
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
     # buttons_in_game = [test_button1,test_button2]
-    start_button = Button((600, 500), (1290, 990), "rectangle",
-                          (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    start_button = Button((485, 480), (705, 590), "rectangle",
+                          (0, 0, 0), 0, (lambda x: change_gamemode(x)))
 
     buttons_in_start_scene = [start_button]
 
@@ -408,8 +408,8 @@ def main():
 
         #スタート画面でボタンの画像を表示する
         if(game_mode==game_modes[0]):
-            start_btn_img=cv.imread("assets/OTEKAKI-start-btn.png")
-            game_image=pasteImg(start_btn_img,game_image,400,560)
+            start_btn_img=cv.imread("assets/Button.png")
+            game_image=pasteImg(start_btn_img,game_image,480,485)
 
 
 
@@ -989,19 +989,22 @@ def scene_transition(image):
 
 def draw_buttons(image, buttons: Button):
     for button in buttons:
-        if (button.shape == "rectangle"):
-            cv.rectangle(image, button.left_top, button.right_bottom,
-                         button.color, button.thickness)
-        elif (button.shape == "circle"):
-            center = calc_circle_center_from_corners(
-                button.left_top, button.right_bottom)
-            radius = calc_cicle_radius_from_corners(
-                button.left_top[1], button.right_bottom[1])
-            cv.circle(image, center, radius, button.color, button.thickness)
+        if(button.thickness == 0):
+            print("button is not painted and hided")
         else:
-            print("button's shape is not designated")
-            cv.rectangle(image, button.left_top, button.right_bottom,
-                         button.color, button.thickness)
+            if (button.shape == "rectangle"):
+                cv.rectangle(image, button.left_top, button.right_bottom,
+                            button.color, button.thickness)
+            elif (button.shape == "circle"):
+                center = calc_circle_center_from_corners(
+                    button.left_top, button.right_bottom)
+                radius = calc_cicle_radius_from_corners(
+                    button.left_top[1], button.right_bottom[1])
+                cv.circle(image, center, radius, button.color, button.thickness)
+            else:
+                print("button's shape is not designated")
+                cv.rectangle(image, button.left_top, button.right_bottom,
+                            button.color, button.thickness)
 
     return image
 
