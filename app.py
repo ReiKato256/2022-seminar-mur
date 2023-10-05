@@ -224,49 +224,56 @@ def main():
     rectangle_button_size = 100
     button_range = 130
     #ペンのサイズを小サイズにするボタン
-    smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
+    smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle",
                             (255,255,255),-1,(lambda x: x.setThickness(7)))
-    smaller_button_shape = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
+    smaller_button_shape = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle",
                             (0,0,0),3,(lambda x: x.setThickness(7)))
-    smaller_button_design = Button((origin_coord[0]+35,origin_coord[1]+35), (origin_coord[0]+65, origin_coord[1]+65), "circle", 
+    smaller_button_design = Button((origin_coord[0]+35,origin_coord[1]+35), (origin_coord[0]+65, origin_coord[1]+65), "circle",
                             (0,0,0),-1,(lambda x: x.setThickness(7)))
 
     #ペンのサイズを中サイズにするボタン
-    nomalsize_button = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range, 
+    nomalsize_button = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range,
                             origin_coord[1]+circle_button_size), "circle", (255,255,255),-1,(lambda x: x.setThickness(15)))
-    nomalsize_button_shape = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range, 
+    nomalsize_button_shape = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range,
                             origin_coord[1]+circle_button_size), "circle", (0,0,0),3,(lambda x: x.setThickness(15)))
-    nomalsize_button_design = Button((origin_coord[0]+button_range+25, origin_coord[1]+25), (origin_coord[0]+75+button_range, 
+    nomalsize_button_design = Button((origin_coord[0]+button_range+25, origin_coord[1]+25), (origin_coord[0]+75+button_range,
                             origin_coord[1]+75), "circle", (0,0,0),-1,(lambda x: x.setThickness(15)))
 
     #ペンのサイズを大サイズにするボタン
-    bigger_button = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2, 
+    bigger_button = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2,
                             origin_coord[1]+circle_button_size), "circle", (255,255,255),-1,(lambda x: x.setThickness(30)))
-    bigger_button_shape = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2, 
+    bigger_button_shape = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2,
                             origin_coord[1]+circle_button_size), "circle", (0,0,0),3,(lambda x: x.setThickness(30)))
-    bigger_button_design = Button((origin_coord[0]+button_range*2 + 15, origin_coord[1]+15), (origin_coord[0]+85+button_range*2, 
+    bigger_button_design = Button((origin_coord[0]+button_range*2 + 15, origin_coord[1]+15), (origin_coord[0]+85+button_range*2,
                             origin_coord[1]+85), "circle", (0,0,0),-1,(lambda x: x.setThickness(30)))
 
     #ペンの色を赤にするボタン
-    red_button = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3, 
+    red_button = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3,
                             origin_coord[1]+rectangle_button_size), "rectangle", (0,0,255),-1,(lambda x: x.setColor((255,0,0))))
-    red_button_shape = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3, 
+    red_button_shape = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3,
                             origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),3,(lambda x: x.setColor((255,0,0))))
 
     #ペンの色を青にするボタン
-    blue_button = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4, 
+    blue_button = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4,
                             origin_coord[1]+rectangle_button_size), "rectangle", (255,0,0),-1,(lambda x: x.setColor((0,0,255))))
-    blue_button_shape = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4, 
+    blue_button_shape = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4,
                             origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),3,(lambda x: x.setColor((0,0,255))))
 
     #ペンの色を黒にするボタン
-    black_button = Button((origin_coord[0]+button_range*5, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*5, 
+    black_button = Button((origin_coord[0]+button_range*5, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*5,
                             origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),-1,(lambda x: x.setColor((2,2,2))))
 
-    buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_shape, smaller_button_design, 
+    # 描画したものを全消去するボタン
+    canvas_clear_button = Button((25, 25), (175, 175), "rectangle", (0, 0, 0), 0, (lambda x: canvas_clear()))
+
+    buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_shape, smaller_button_design,
                                 nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
                                 bigger_button, bigger_button_shape, bigger_button_design,
-                                red_button, red_button_shape, blue_button, blue_button_shape, black_button]
+                                red_button, red_button_shape, blue_button, blue_button_shape, black_button, canvas_clear_button]
+
+
+
+
     while True:
         if paint_canvas_reset:
             # 画像と同じサイズの黒で埋めた画像を用意
@@ -407,6 +414,9 @@ def main():
         elif(game_mode==game_modes[1] or game_mode==game_modes[2]):
             next_btn_img=cv.imread("assets/next_button.png")
             game_image=pasteImg(next_btn_img,game_image,460,480)
+        elif(game_mode==game_modes[3]):
+            canvas_clear_button_img=cv.imread("assets/canvas_clear_button.png") #150px * 150px
+            game_image=pasteImg(canvas_clear_button_img,game_image,25,25)
 
         game_image = draw_info(game_image, fps, mode, number)
 
@@ -927,6 +937,10 @@ def change_gamemode_with_reset(number):
     global paint_canvas_reset
     paint_canvas_reset = True
     change_gamemode(number)
+
+def canvas_clear():
+    global paint_canvas_reset
+    paint_canvas_reset = True
 
 def finish_game(number):
     global picture_subject_in_game
