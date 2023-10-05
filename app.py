@@ -83,6 +83,24 @@ def get_args():
 
     return args
 
+def pasteImg(img:tuple[int,int],imgback:tuple[int,int],x:int,y:int):
+    #x,yの座標に画像を貼り付ける
+    w = img.shape[0]
+    h=img.shape[1]
+    imgrot=np.zeros(imgback.shape,dtype=np.uint8)
+    imgrot[x:x+w,y:y+h,:] = img[:w,:h,:]
+
+    imggray = cv.cvtColor(imgrot,cv.COLOR_BGR2GRAY)
+    ret,mask = cv.threshold(imggray,10,255,cv.THRESH_BINARY)
+    mask_inv = cv.bitwise_not(mask)
+
+    img1_bg = cv.bitwise_and(imgback,imgback,mask=mask_inv)
+    img2_fg = cv.bitwise_and(imgrot,imgrot,mask=mask)
+
+    imgpasted = cv.add(img1_bg,img2_fg)
+
+    return imgpasted
+
 
 def main():
     global buttons_in_start_scene
@@ -387,6 +405,12 @@ def main():
         dst = cv.add(image_src, paint_canvas)
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
+
+        #スタート画面でボタンの画像を表示する
+        if(game_mode==game_modes[0]):
+            start_btn_img=cv.imread("assets/OTEKAKI-start-btn.png")
+            game_image=pasteImg(start_btn_img,game_image,400,560)
+
 
 
         game_image = draw_info(game_image, fps, mode, number)
