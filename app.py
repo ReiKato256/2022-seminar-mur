@@ -66,8 +66,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=1920)
-    parser.add_argument("--height", help='cap height', type=int, default=1080)
+    parser.add_argument("--width", help='cap width', type=int, default=1280)
+    parser.add_argument("--height", help='cap height', type=int, default=720)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -100,7 +100,6 @@ def pasteImg(img:tuple[int,int],imgback:tuple[int,int],x:int,y:int):
     imgpasted = cv.add(img1_bg,img2_fg)
 
     return imgpasted
-
 
 def main():
     global buttons_in_start_scene
@@ -196,17 +195,16 @@ def main():
     # test_button1 = Button((80,330),(180,430),(lambda x : x.setColor((255,0,0))))
     # test_button2 = Button((200,330),(300,430),(lambda x : x.setColor((0,0,255))))
     # buttons_in_game = [test_button1,test_button2]
-
-    start_button = Button((400, 560), (860, 660), "rectangle",
-                          (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    start_button = Button((460, 480), (830, 590), "rectangle",
+                          (0, 0, 0), 0, (lambda x: change_gamemode(x)))
 
     buttons_in_start_scene = [start_button]
 
-    show_subject_button = Button((400, 560), (860, 660), "rectangle",
-                                 (255, 255, 255), -1, (lambda x: change_gamemode(x)))
+    show_subject_button = Button((460, 480), (830, 590), "rectangle",
+                                 (255, 255, 255), 0, (lambda x: change_gamemode(x)))
     buttons_in_subject_hide_scene = [show_subject_button]
-    confirm_subject_button = Button((400, 560), (860, 660), "rectangle",
-                                    (255, 255, 255), -1, (lambda x: change_gamemode_with_reset(x)))
+    confirm_subject_button = Button((460, 480), (830, 590), "rectangle",
+                                    (255, 255, 255), 0, (lambda x: change_gamemode_with_reset(x)))
     buttons_in_subject_open_scene = [confirm_subject_button]
     finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "circle",
                            (0, 0, 255), -1, (lambda x: change_gamemode(x)))
@@ -221,10 +219,10 @@ def main():
     buttons_in_result_scene = [back_to_title_button]
 
 
-    origin_coord = (100,530)
+    origin_coord = (80,530)
     circle_button_size = 100
     rectangle_button_size = 100
-    button_range = 150
+    button_range = 130
     #ペンのサイズを小サイズにするボタン
     smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
                             (255,255,255),-1,(lambda x: x.setThickness(7)))
@@ -269,8 +267,6 @@ def main():
                                 nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
                                 bigger_button, bigger_button_shape, bigger_button_design,
                                 red_button, red_button_shape, blue_button, blue_button_shape, black_button]
-
-
     while True:
         if paint_canvas_reset:
             # 画像と同じサイズの黒で埋めた画像を用意
@@ -391,9 +387,6 @@ def main():
 
         ###################################################################
 
-        
-        # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
-
         paint_canvas2gray = cv.cvtColor(
             paint_canvas, cv.COLOR_BGR2GRAY)  # 黒背景に黒以外の色で線を描く
         ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
@@ -409,17 +402,16 @@ def main():
 
         #スタート画面でボタンの画像を表示する
         if(game_mode==game_modes[0]):
-            start_btn_img=cv.imread("assets/OTEKAKI-start-btn.png")
-            game_image=pasteImg(start_btn_img,game_image,400,560)
+            start_btn_img=cv.imread("assets/start_button.png")
+            game_image=pasteImg(start_btn_img,game_image,460,480)
+        elif(game_mode==game_modes[1] or game_mode==game_modes[2]):
+            next_btn_img=cv.imread("assets/next_button.png")
+            game_image=pasteImg(next_btn_img,game_image,460,480)
 
-
-
-        game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_info(game_image, fps, mode, number)
 
-        # game_image = draw_UI_in_game(game_image)
         game_image = scene_transition(game_image)
-
+        game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_cursor(game_image, point_history, history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
@@ -991,19 +983,22 @@ def scene_transition(image):
 
 def draw_buttons(image, buttons: Button):
     for button in buttons:
-        if (button.shape == "rectangle"):
-            cv.rectangle(image, button.left_top, button.right_bottom,
-                         button.color, button.thickness)
-        elif (button.shape == "circle"):
-            center = calc_circle_center_from_corners(
-                button.left_top, button.right_bottom)
-            radius = calc_cicle_radius_from_corners(
-                button.left_top[1], button.right_bottom[1])
-            cv.circle(image, center, radius, button.color, button.thickness)
+        if(button.thickness == 0):
+            print("button is not painted and hided")
         else:
-            print("button's shape is not designated")
-            cv.rectangle(image, button.left_top, button.right_bottom,
-                         button.color, button.thickness)
+            if (button.shape == "rectangle"):
+                cv.rectangle(image, button.left_top, button.right_bottom,
+                            button.color, button.thickness)
+            elif (button.shape == "circle"):
+                center = calc_circle_center_from_corners(
+                    button.left_top, button.right_bottom)
+                radius = calc_cicle_radius_from_corners(
+                    button.left_top[1], button.right_bottom[1])
+                cv.circle(image, center, radius, button.color, button.thickness)
+            else:
+                print("button's shape is not designated")
+                cv.rectangle(image, button.left_top, button.right_bottom,
+                            button.color, button.thickness)
 
     return image
 
@@ -1021,7 +1016,7 @@ def draw_UI_in_start_scene(image):
     global buttons_in_start_scene
     # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_start_scene)
-    image = putText_japanese(image, "ゲームをはじめる！", (400, 560), 50, (0, 0, 0))
+    image = putText_japanese(image, "ゲームをはじめる！", (400*1.5, 560*1.5), 50, (0, 0, 0))
     return image
 
 
