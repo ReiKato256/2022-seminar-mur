@@ -66,8 +66,8 @@ def get_args():
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--device", type=int, default=0)
-    parser.add_argument("--width", help='cap width', type=int, default=1920)
-    parser.add_argument("--height", help='cap height', type=int, default=1080)
+    parser.add_argument("--width", help='cap width', type=int, default=1280)
+    parser.add_argument("--height", help='cap height', type=int, default=720)
 
     parser.add_argument('--use_static_image_mode', action='store_true')
     parser.add_argument("--min_detection_confidence",
@@ -100,7 +100,6 @@ def pasteImg(img:tuple[int,int],imgback:tuple[int,int],x:int,y:int):
     imgpasted = cv.add(img1_bg,img2_fg)
 
     return imgpasted
-
 
 def main():
     global buttons_in_start_scene
@@ -268,8 +267,6 @@ def main():
                                 nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
                                 bigger_button, bigger_button_shape, bigger_button_design,
                                 red_button, red_button_shape, blue_button, blue_button_shape, black_button]
-
-
     while True:
         if paint_canvas_reset:
             # 画像と同じサイズの黒で埋めた画像を用意
@@ -390,9 +387,6 @@ def main():
 
         ###################################################################
 
-        
-        # paint_canvasをマスク画像に変換できるようにグレースケールにしてる
-
         paint_canvas2gray = cv.cvtColor(
             paint_canvas, cv.COLOR_BGR2GRAY)  # 黒背景に黒以外の色で線を描く
         ret, mask = cv.threshold(paint_canvas2gray, 1, 255, cv.THRESH_BINARY)
@@ -410,18 +404,12 @@ def main():
         if(game_mode==game_modes[0]):
             start_btn_img=cv.imread("assets/start_button.png")
             game_image=pasteImg(start_btn_img,game_image,460,480)
-        else if(game_mode==game_modes[1]):
+        elif(game_mode==game_modes[1] or game_mode==game_modes[2]):
             next_btn_img=cv.imread("assets/next_button.png")
             game_image=pasteImg(next_btn_img,game_image,460,480)
-        else if(game_mode==game_modes[2]):
-            next_btn_img=cv.imread("assets/next_button.png")
-            game_image=pasteImg(next_btn_img,game_image,460,480)
-
-
 
         game_image = draw_info(game_image, fps, mode, number)
 
-        # game_image = draw_UI_in_game(game_image)
         game_image = scene_transition(game_image)
         game_image = cv.resize(game_image, (1920,1080))
         game_image = draw_cursor(game_image, point_history, history_length)
