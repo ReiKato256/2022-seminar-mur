@@ -184,6 +184,7 @@ def main():
     mode = 0
     # デバッグモードとの切り替え用フラグ
     debugmode = False
+    is_fps_showed = True
 
     ret, image = cap.read()
     size = image.shape
@@ -269,7 +270,8 @@ def main():
                                                                               origin_coord[1]+rectangle_button_size), "rectangle", (0, 0, 0), -1, (lambda x: x.setColor((2, 2, 2))))
 
     # 描画したものを全消去するボタン
-    canvas_clear_button = Button((25, 25), (175, 175), "rectangle", (0, 0, 0), 0, (lambda x: canvas_clear()))
+    canvas_clear_button = Button(
+        (25, 25), (175, 175), "rectangle", (0, 0, 0), 0, (lambda x: canvas_clear()))
 
     # buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_shape, smaller_button_design,
     #                             nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
@@ -294,6 +296,8 @@ def main():
             break
         elif key & 0xFF == ord('r'):
             debugmode = not debugmode
+        elif key & 0xFF == ord('f'):
+            is_fps_showed = not is_fps_showed
         number, mode = select_mode(key, mode)
 
         # カメラキャプチャ #####################################################
@@ -424,13 +428,15 @@ def main():
             next_btn_img = cv.imread("assets/next_button.png")
             game_image = pasteImg(next_btn_img, game_image, 460, 480)
         elif (game_mode == game_modes[3]):
-            canvas_clear_button_img = cv.imread("assets/canvas_clear_button.png")  # 画像サイズ : 150px * 150px
+            canvas_clear_button_img = cv.imread(
+                "assets/canvas_clear_button.png")  # 画像サイズ : 150px * 150px
             game_image = pasteImg(canvas_clear_button_img, game_image, 25, 25)
         elif (game_mode == game_modes[6]):
             home_btn_img = cv.imread("assets/home_button.png")
             game_image = pasteImg(home_btn_img, game_image, 460, 480)
 
-        game_image = draw_info(game_image, fps, mode, number)
+        if (is_fps_showed):
+            game_image = draw_info(game_image, fps, mode, number)
 
         game_image = scene_transition(game_image)
         game_image = cv.resize(game_image, (1920, 1080))
@@ -1041,7 +1047,7 @@ def draw_UI_in_subject_hide(image):
     image = putText_japanese(
         image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color)
     image = putText_japanese2(image, "ボタンをつかむとテーマが表示されます。",
-                             (50, 250), 40, text_color2)
+                              (50, 250), 40, text_color2)
     image = putText_japanese2(
         image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color2)
     return image
@@ -1067,7 +1073,7 @@ def draw_UI_in_subject_open(image):
         image, picture_subject_in_game, (50, 100), 80, text_color2)
     image = putText_japanese2(image, " です。", (50, 200), 40, text_color2)
     image = putText_japanese2(image, "ボタンをつかむとゲームが開始されます。",
-                             (50, 250), 40, text_color2)
+                              (50, 250), 40, text_color2)
     image = putText_japanese2(
         image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color2)
     return image
@@ -1080,8 +1086,8 @@ def draw_UI_in_game(image):
     size = image.shape
     # ペンの太さのアイコンのサイズは幅が30,50,70
     image = draw_buttons(image, buttons_in_playing_scene)
-    cv.line(image,(size[1]-140, 40), (size[1]-40, 140),(0,0,0),2)
-    cv.line(image,(size[1]-40,40),(size[1]-140,140),(0,0,0),2)
+    cv.line(image, (size[1]-140, 40), (size[1]-40, 140), (0, 0, 0), 2)
+    cv.line(image, (size[1]-40, 40), (size[1]-140, 140), (0, 0, 0), 2)
     image = draw_timer(image, timer, (640, 50), 1)
     center = calc_circle_center_from_corners((1150, 590), (1250, 690))
     radius = 50
@@ -1106,14 +1112,15 @@ def draw_UI_in_judge_scene(image):
     image = putText_japanese(
         image, "間違っていたら青のボタンをつかんでください", (230, 570), 40, text_color)
     image = putText_japanese2(image, "答えがお題に合っていたら赤を",
-                             (370, 520), 40, text_color2)
+                              (370, 520), 40, text_color2)
     image = putText_japanese2(
         image, "間違っていたら青のボタンをつかんでください", (230, 570), 40, text_color2)
     image = draw_buttons(image, buttons_in_judge_scene)
-    cv.circle(image, (1180,500), 70, (255,255,255), thickness=10)
-    cv.line(image, (30,430), (170,570), (255,255,255),thickness=10)
-    cv.line(image, (30,570), (170,430), (255,255,255),thickness=10)
+    cv.circle(image, (1180, 500), 70, (255, 255, 255), thickness=10)
+    cv.line(image, (30, 430), (170, 570), (255, 255, 255), thickness=10)
+    cv.line(image, (30, 570), (170, 430), (255, 255, 255), thickness=10)
     return image
+
 
 def draw_UI_in_result_scene(image):
     global buttons_in_result_scene
@@ -1168,6 +1175,7 @@ def putText_japanese2(image, text, point, size, color):
     # PILからndarrayに変換して返す
     return np.array(img_pil)
 
+
 def putText_japanese2(image, text, point, size, color):
     # Notoフォントとする
     font = ImageFont.truetype("fonts/NotoSansJP-Regular.otf", size)
@@ -1178,7 +1186,7 @@ def putText_japanese2(image, text, point, size, color):
     # drawインスタンス生成
     draw = ImageDraw.Draw(img_pil)
 
-    # テキスト描画
+# テキスト描画
     draw.text(point, text, fill=color, font=font)
 
     # PILからndarrayに変換して返す
