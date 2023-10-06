@@ -37,6 +37,7 @@ paint_canvas_reset = True
 
 sec = timer = 180  # タイマー秒数
 timer_flag = False
+global pen
 
 
 class Pen:
@@ -83,23 +84,25 @@ def get_args():
 
     return args
 
-def pasteImg(img:tuple[int,int],imgback:tuple[int,int],x:int,y:int):
-    #x,yの座標に画像を貼り付ける
-    w = img.shape[0]
-    h=img.shape[1]
-    imgrot=np.zeros(imgback.shape,dtype=np.uint8)
-    imgrot[x:x+w,y:y+h,:] = img[:w,:h,:]
 
-    imggray = cv.cvtColor(imgrot,cv.COLOR_BGR2GRAY)
-    ret,mask = cv.threshold(imggray,10,255,cv.THRESH_BINARY)
+def pasteImg(img: tuple[int, int], imgback: tuple[int, int], x: int, y: int):
+    # x,yの座標に画像を貼り付ける
+    w = img.shape[0]
+    h = img.shape[1]
+    imgrot = np.zeros(imgback.shape, dtype=np.uint8)
+    imgrot[x:x+w, y:y+h, :] = img[:w, :h, :]
+
+    imggray = cv.cvtColor(imgrot, cv.COLOR_BGR2GRAY)
+    ret, mask = cv.threshold(imggray, 10, 255, cv.THRESH_BINARY)
     mask_inv = cv.bitwise_not(mask)
 
-    img1_bg = cv.bitwise_and(imgback,imgback,mask=mask_inv)
-    img2_fg = cv.bitwise_and(imgrot,imgrot,mask=mask)
+    img1_bg = cv.bitwise_and(imgback, imgback, mask=mask_inv)
+    img2_fg = cv.bitwise_and(imgrot, imgrot, mask=mask)
 
-    imgpasted = cv.add(img1_bg,img2_fg)
+    imgpasted = cv.add(img1_bg, img2_fg)
 
     return imgpasted
+
 
 def main():
     global buttons_in_start_scene
@@ -111,6 +114,7 @@ def main():
 
     global game_modes
     global game_mode
+    global pen
     global picture_subject_in_game
     global paint_canvas_reset
     global timer
@@ -206,66 +210,69 @@ def main():
     confirm_subject_button = Button((460, 480), (830, 590), "rectangle",
                                     (255, 255, 255), 0, (lambda x: change_gamemode_with_reset(x)))
     buttons_in_subject_open_scene = [confirm_subject_button]
-    finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "circle",
+    finish_button = Button((size[1]-140, 40), (size[1]-40, 140), "rectangle",
                            (0, 0, 255), -1, (lambda x: change_gamemode(x)))
 
     wrong_button = Button((0, 300), (200, size[0]), "rectangle",
-                          (255, 0, 0), -1, (lambda x: change_gamemode(x)))
+                          (255, 0, 0), -1, (lambda x : change_gamemode(6)))
     correct_button = Button((size[1]-200, 300), (size[1], size[0]), "rectangle",
-                            (0, 0, 255), -1, (lambda x: change_gamemode(x)))
+                            (0, 0, 255), -1, (lambda x: change_gamemode(6)))
     buttons_in_judge_scene = [wrong_button, correct_button]
-    back_to_title_button = Button((400, 560), (860, 660), "rectangle",
-                                  (255, 255, 255), -1, (lambda x: finish_game(x)))
+    back_to_title_button = Button((460, 480), (830, 590), "rectangle",
+                                  (255, 255, 255), 0, (lambda x: finish_game(x)))
     buttons_in_result_scene = [back_to_title_button]
 
-
-    origin_coord = (80,530)
+    origin_coord = (80, 530)
     circle_button_size = 100
     rectangle_button_size = 100
     button_range = 130
-    #ペンのサイズを小サイズにするボタン
-    smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
-                            (255,255,255),-1,(lambda x: x.setThickness(7)))
-    smaller_button_shape = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle", 
-                            (0,0,0),3,(lambda x: x.setThickness(7)))
-    smaller_button_design = Button((origin_coord[0]+35,origin_coord[1]+35), (origin_coord[0]+65, origin_coord[1]+65), "circle", 
-                            (0,0,0),-1,(lambda x: x.setThickness(7)))
+    # ペンのサイズを小サイズにするボタン
+    smaller_button = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle",
+                            (255, 255, 255), -1, (lambda x: x.setThickness(7)))
+    # smaller_button_shape = Button((origin_coord), (origin_coord[0]+circle_button_size, origin_coord[1]+circle_button_size), "circle",
+    #                               (0, 0, 0), 3, (lambda x: x.setThickness(7)))
+    smaller_button_design = Button((origin_coord[0]+35, origin_coord[1]+35), (origin_coord[0]+65, origin_coord[1]+65), "circle",
+                                   (0, 0, 0), -1, (lambda x: x.setThickness(7)))
 
-    #ペンのサイズを中サイズにするボタン
-    nomalsize_button = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range, 
-                            origin_coord[1]+circle_button_size), "circle", (255,255,255),-1,(lambda x: x.setThickness(15)))
-    nomalsize_button_shape = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range, 
-                            origin_coord[1]+circle_button_size), "circle", (0,0,0),3,(lambda x: x.setThickness(15)))
-    nomalsize_button_design = Button((origin_coord[0]+button_range+25, origin_coord[1]+25), (origin_coord[0]+75+button_range, 
-                            origin_coord[1]+75), "circle", (0,0,0),-1,(lambda x: x.setThickness(15)))
+    # ペンのサイズを中サイズにするボタン
+    nomalsize_button = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range,
+                                                                                origin_coord[1]+circle_button_size), "circle", (255, 255, 255), -1, (lambda x: x.setThickness(15)))
+    # nomalsize_button_shape = Button((origin_coord[0]+button_range, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range,
+    #                                                                                   origin_coord[1]+circle_button_size), "circle", (0, 0, 0), 3, (lambda x: x.setThickness(15)))
+    nomalsize_button_design = Button((origin_coord[0]+button_range+25, origin_coord[1]+25), (origin_coord[0]+75+button_range,
+                                                                                             origin_coord[1]+75), "circle", (0, 0, 0), -1, (lambda x: x.setThickness(15)))
 
-    #ペンのサイズを大サイズにするボタン
-    bigger_button = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2, 
-                            origin_coord[1]+circle_button_size), "circle", (255,255,255),-1,(lambda x: x.setThickness(30)))
-    bigger_button_shape = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2, 
-                            origin_coord[1]+circle_button_size), "circle", (0,0,0),3,(lambda x: x.setThickness(30)))
-    bigger_button_design = Button((origin_coord[0]+button_range*2 + 15, origin_coord[1]+15), (origin_coord[0]+85+button_range*2, 
-                            origin_coord[1]+85), "circle", (0,0,0),-1,(lambda x: x.setThickness(30)))
+    # ペンのサイズを大サイズにするボタン
+    bigger_button = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2,
+                                                                               origin_coord[1]+circle_button_size), "circle", (255, 255, 255), -1, (lambda x: x.setThickness(30)))
+    # bigger_button_shape = Button((origin_coord[0]+button_range*2, origin_coord[1]), (origin_coord[0]+circle_button_size+button_range*2,
+    #                                                                                  origin_coord[1]+circle_button_size), "circle", (0, 0, 0), 3, (lambda x: x.setThickness(30)))
+    bigger_button_design = Button((origin_coord[0]+button_range*2 + 15, origin_coord[1]+15), (origin_coord[0]+85+button_range*2,
+                                                                                              origin_coord[1]+85), "circle", (0, 0, 0), -1, (lambda x: x.setThickness(30)))
 
-    #ペンの色を赤にするボタン
-    red_button = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3, 
-                            origin_coord[1]+rectangle_button_size), "rectangle", (0,0,255),-1,(lambda x: x.setColor((255,0,0))))
-    red_button_shape = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3, 
-                            origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),3,(lambda x: x.setColor((255,0,0))))
+    # ペンの色を赤にするボタン
+    red_button = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3,
+                                                                            origin_coord[1]+rectangle_button_size), "rectangle", (0, 0, 255), -1, (lambda x: x.setColor((255, 0, 0))))
+    red_button_shape = Button((origin_coord[0]+button_range*3, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*3,
+                                                                                  origin_coord[1]+rectangle_button_size), "rectangle", (0, 0, 0), 3, (lambda x: x.setColor((255, 0, 0))))
 
-    #ペンの色を青にするボタン
-    blue_button = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4, 
-                            origin_coord[1]+rectangle_button_size), "rectangle", (255,0,0),-1,(lambda x: x.setColor((0,0,255))))
-    blue_button_shape = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4, 
-                            origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),3,(lambda x: x.setColor((0,0,255))))
+    # ペンの色を青にするボタン
+    blue_button = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4,
+                                                                             origin_coord[1]+rectangle_button_size), "rectangle", (255, 0, 0), -1, (lambda x: x.setColor((0, 0, 255))))
+    blue_button_shape = Button((origin_coord[0]+button_range*4, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*4,
+                                                                                   origin_coord[1]+rectangle_button_size), "rectangle", (0, 0, 0), 3, (lambda x: x.setColor((0, 0, 255))))
 
-    #ペンの色を黒にするボタン
-    black_button = Button((origin_coord[0]+button_range*5, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*5, 
-                            origin_coord[1]+rectangle_button_size), "rectangle", (0,0,0),-1,(lambda x: x.setColor((2,2,2))))
+    # ペンの色を黒にするボタン
+    black_button = Button((origin_coord[0]+button_range*5, origin_coord[1]), (origin_coord[0]+rectangle_button_size+button_range*5,
+                                                                              origin_coord[1]+rectangle_button_size), "rectangle", (0, 0, 0), -1, (lambda x: x.setColor((2, 2, 2))))
 
-    buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_shape, smaller_button_design, 
-                                nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
-                                bigger_button, bigger_button_shape, bigger_button_design,
+    # buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_shape, smaller_button_design,
+    #                             nomalsize_button, nomalsize_button_shape, nomalsize_button_design,
+    #                             bigger_button, bigger_button_shape, bigger_button_design,
+    #                             red_button, red_button_shape, blue_button, blue_button_shape, black_button]
+    buttons_in_playing_scene = [finish_button, smaller_button, smaller_button_design,
+                                nomalsize_button, nomalsize_button_design,
+                                bigger_button, bigger_button_design,
                                 red_button, red_button_shape, blue_button, blue_button_shape, black_button]
     while True:
         if paint_canvas_reset:
@@ -356,8 +363,9 @@ def main():
                             paint_canvas, point_history, pen.thickness, pen.color)
                     # cv.circle(paint_canvas,point_landmark,10,0,-1)#指差しのときは白で線を描く
 
-                if(debugmode):
-                    debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+                if (debugmode):
+                    debug_image = draw_bounding_rect(
+                        use_brect, debug_image, brect)
                     debug_image = draw_landmarks(debug_image, landmark_list)
                     debug_image = draw_info_text(
                         debug_image,
@@ -379,7 +387,7 @@ def main():
             timer = sec
 
         timer_str = str(timer)
-        if(debugmode):
+        if (debugmode):
 
             debug_image = draw_timer(debug_image, timer, (100, 100), 1)
             debug_image = draw_point_history(debug_image, point_history)
@@ -400,18 +408,23 @@ def main():
 
         game_image = cv.cvtColor(dst, cv.COLOR_BGR2RGB)
 
-        #スタート画面でボタンの画像を表示する
-        if(game_mode==game_modes[0]):
-            start_btn_img=cv.imread("assets/start_button.png")
-            game_image=pasteImg(start_btn_img,game_image,460,480)
-        elif(game_mode==game_modes[1] or game_mode==game_modes[2]):
-            next_btn_img=cv.imread("assets/next_button.png")
-            game_image=pasteImg(next_btn_img,game_image,460,480)
+        # スタート画面でボタンの画像を表示する
+        if (game_mode == game_modes[0]):
+            start_btn_img = cv.imread("assets/start_button.png")
+            title_img = cv.imread("assets/title.png")
+            game_image = pasteImg(start_btn_img, game_image, 460, 480)
+            game_image = pasteImg(title_img,game_image,0,0)
+        elif (game_mode == game_modes[1] or game_mode == game_modes[2]):
+            next_btn_img = cv.imread("assets/next_button.png")
+            game_image = pasteImg(next_btn_img, game_image, 460, 480)
+        elif (game_mode == game_modes[6]):
+            home_btn_img = cv.imread("assets/home_button.png")
+            game_image = pasteImg(home_btn_img, game_image, 460, 480)
 
         game_image = draw_info(game_image, fps, mode, number)
 
         game_image = scene_transition(game_image)
-        game_image = cv.resize(game_image, (1920,1080))
+        game_image = cv.resize(game_image, (1920, 1080))
         game_image = draw_cursor(game_image, point_history, history_length)
         # 画面反映 #############################################################
         # rキーで切り替えできる
@@ -928,6 +941,7 @@ def change_gamemode_with_reset(number):
     paint_canvas_reset = True
     change_gamemode(number)
 
+
 def finish_game(number):
     global picture_subject_in_game
     picture_subject_in_game = picture_subject()
@@ -966,15 +980,6 @@ def scene_transition(image):
         if timer_flag:
             timer_flag = False
         return draw_UI_in_judge_scene(image)
-    elif game_mode == game_modes[5]:
-        if timer == 0:
-            change_gamemode(6)
-        elif not timer_flag:
-            timer = 5
-            timer_flag = True
-        else:
-            pass
-        return draw_UI_in_dokidoki_scene(image)
     elif game_mode == game_modes[6]:
         if not timer_flag:
             timer_flag = False
@@ -983,33 +988,25 @@ def scene_transition(image):
 
 def draw_buttons(image, buttons: Button):
     for button in buttons:
-        if(button.thickness == 0):
+        if (button.thickness == 0):
             print("button is not painted and hided")
         else:
             if (button.shape == "rectangle"):
                 cv.rectangle(image, button.left_top, button.right_bottom,
-                            button.color, button.thickness)
+                             button.color, button.thickness)
             elif (button.shape == "circle"):
                 center = calc_circle_center_from_corners(
                     button.left_top, button.right_bottom)
                 radius = calc_cicle_radius_from_corners(
                     button.left_top[1], button.right_bottom[1])
-                cv.circle(image, center, radius, button.color, button.thickness)
+                cv.circle(image, center, radius,
+                          button.color, button.thickness)
             else:
                 print("button's shape is not designated")
                 cv.rectangle(image, button.left_top, button.right_bottom,
-                            button.color, button.thickness)
+                             button.color, button.thickness)
 
     return image
-
-
-# def draw_UI_background(image):
-#     # 透明化する図形を記述
-#     #image2 = image.copy()
-#     #cv.rectangle(image, (0, 500), (1920, 1080), (180, 180, 180), -1)
-#     #weight = 0.5
-#     #image3 = cv.addWeighted(image, weight, image2, 1-weight, -1)
-#     return image3
 
 
 def draw_UI_in_start_scene(image):
@@ -1050,10 +1047,24 @@ def draw_UI_in_subject_open(image):
 def draw_UI_in_game(image):
     global buttons_in_playing_scene
     global timer
-    # image = draw_UI_background(image)
+    global pen
+    size = image.shape
+    # ペンの太さのアイコンのサイズは幅が30,50,70
     image = draw_buttons(image, buttons_in_playing_scene)
-    image = putText_japanese(image,"☓",(image.shape[1]-120,60),40,(255,255,255))
+    cv.line(image,(size[1]-140, 40), (size[1]-40, 140),(0,0,0),2)
+    cv.line(image,(size[1]-40,40),(size[1]-140,140),(0,0,0),2)
     image = draw_timer(image, timer, (640, 50), 1)
+    center = calc_circle_center_from_corners((1150, 590), (1250, 690))
+    radius = 50
+    cv.circle(image, center, radius, (255, 255, 255), -1)
+    if (pen.thickness < 15):
+        pen_icon_radius = 15
+    elif (pen.thickness > 15):
+        pen_icon_radius = 35
+    else:
+        pen_icon_radius = 25
+    cv.circle(image, center, pen_icon_radius, pen.color[::-1], -1)
+
     return image
 
 
@@ -1061,20 +1072,15 @@ def draw_UI_in_judge_scene(image):
     global buttons_in_judge_scene
     # image = draw_UI_background(image)
     # image = draw_UI_background(image)
-    image = putText_japanese(image, "答えがお題に合っていたら赤を", (370,520), 40, text_color)
-    image = putText_japanese(image, "間違っていたら青のボタンをつかんでください", (230,570), 40, text_color)
+    image = putText_japanese(image, "答えがお題に合っていたら赤を",
+                             (370, 520), 40, text_color)
+    image = putText_japanese(
+        image, "間違っていたら青のボタンをつかんでください", (230, 570), 40, text_color)
     image = draw_buttons(image, buttons_in_judge_scene)
     cv.circle(image, (1180,500), 70, (255,255,255), thickness=10)
     cv.line(image, (30,430), (170,570), (255,255,255),thickness=10)
     cv.line(image, (30,570), (170,430), (255,255,255),thickness=10)
     return image
-
-
-def draw_UI_in_dokidoki_scene(image):
-    global timer
-    image = draw_timer(image, timer, (640, 360), 3)
-    return image
-
 
 def draw_UI_in_result_scene(image):
     global buttons_in_result_scene
@@ -1085,7 +1091,6 @@ def draw_UI_in_result_scene(image):
         image, picture_subject_in_game, (50, 100), 80, text_color)
     image = putText_japanese(image, " でした。", (50, 200), 40, text_color)
     image = draw_buttons(image, buttons_in_result_scene)
-    image = putText_japanese(image, "最初の画面に戻る", (400, 560), 50, (0, 0, 0))
     return image
 
 
