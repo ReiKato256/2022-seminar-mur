@@ -422,7 +422,8 @@ def main():
             home_btn_img = cv.imread("assets/home_button.png")
             game_image = pasteImg(home_btn_img, game_image, 460, 480)
 
-        game_image = draw_info(game_image, fps, mode, number)
+        if(game_mode!=game_modes[3]):
+            game_image = draw_info(game_image, fps, mode, number)
 
         game_image = scene_transition(game_image)
         game_image = cv.resize(game_image, (1920, 1080))
