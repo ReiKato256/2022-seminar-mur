@@ -32,6 +32,7 @@ game_mode = game_modes[0]
 picture_subject_in_game = picture_subject()
 white = (255, 255, 255)
 text_color = (0, 0, 0)
+text_color2 = (255, 255, 255)
 
 paint_canvas_reset = True
 
@@ -1023,9 +1024,13 @@ def draw_UI_in_subject_hide(image):
     # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_subject_hide_scene)
     image = putText_japanese(image, "ボタンをつかむとテーマが表示されます。",
-                             (50, 250), 40, (0, 0, 0))
+                             (50, 250), 40, text_color)
     image = putText_japanese(
-        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, (0, 0, 0))
+        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color)
+    image = putText_japanese2(image, "ボタンをつかむとテーマが表示されます。",
+                             (50, 250), 40, text_color2)
+    image = putText_japanese2(
+        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color2)
     return image
 
 
@@ -1043,6 +1048,15 @@ def draw_UI_in_subject_open(image):
                              (50, 250), 40, text_color)
     image = putText_japanese(
         image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color)
+
+    image = putText_japanese2(image, "お題は ", (50, 50), 40, text_color2)
+    image = putText_japanese2(
+        image, picture_subject_in_game, (50, 100), 80, text_color2)
+    image = putText_japanese2(image, " です。", (50, 200), 40, text_color2)
+    image = putText_japanese2(image, "ボタンをつかむとゲームが開始されます。",
+                             (50, 250), 40, text_color2)
+    image = putText_japanese2(
+        image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color2)
     return image
 
 
@@ -1078,6 +1092,10 @@ def draw_UI_in_judge_scene(image):
                              (370, 520), 40, text_color)
     image = putText_japanese(
         image, "間違っていたら青のボタンをつかんでください", (230, 570), 40, text_color)
+    image = putText_japanese2(image, "答えがお題に合っていたら赤を",
+                             (370, 520), 40, text_color2)
+    image = putText_japanese2(
+        image, "間違っていたら青のボタンをつかんでください", (230, 570), 40, text_color2)
     image = draw_buttons(image, buttons_in_judge_scene)
     return image
 
@@ -1089,6 +1107,11 @@ def draw_UI_in_result_scene(image):
     image = putText_japanese(
         image, picture_subject_in_game, (50, 100), 80, text_color)
     image = putText_japanese(image, " でした。", (50, 200), 40, text_color)
+
+    image = putText_japanese2(image, "お題は ", (50, 50), 40, text_color2)
+    image = putText_japanese2(
+        image, picture_subject_in_game, (50, 100), 80, text_color2)
+    image = putText_japanese2(image, " でした。", (50, 200), 40, text_color2)
     image = draw_buttons(image, buttons_in_result_scene)
     return image
 
@@ -1098,7 +1121,23 @@ def draw_UI_in_result_scene(image):
 
 def putText_japanese(image, text, point, size, color):
     # Notoフォントとする
-    font = ImageFont.truetype("fonts/NotoSansJP-Light.otf", size)
+    font = ImageFont.truetype("fonts/NotoSansJP-Bold.otf", size)
+
+    # imgをndarrayからPILに変換
+    img_pil = Image.fromarray(image)
+
+    # drawインスタンス生成
+    draw = ImageDraw.Draw(img_pil)
+
+    # テキスト描画
+    draw.text(point, text, fill=color, font=font)
+
+    # PILからndarrayに変換して返す
+    return np.array(img_pil)
+
+def putText_japanese2(image, text, point, size, color):
+    # Notoフォントとする
+    font = ImageFont.truetype("fonts/NotoSansJP-Regular.otf", size)
 
     # imgをndarrayからPILに変換
     img_pil = Image.fromarray(image)
