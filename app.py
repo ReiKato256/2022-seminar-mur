@@ -460,7 +460,7 @@ def main():
         # rキーで切り替えできる
         print(game_mode)
         if (debugmode):
-            cv.imshow('OtEKAKI-debug mode', debug_image)
+            cv.imshow('OtEKAKI', debug_image)
             cv.imshow('OtEKAKI for watcher',debug_image)
         else:
             cv.imshow('OtEKAKI', game_image)
