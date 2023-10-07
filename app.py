@@ -427,7 +427,7 @@ def main():
         elif (game_mode == game_modes[1]):
             next_btn_img = cv.imread("assets/next_button.png")
             game_image = pasteImg(next_btn_img, game_image, 460, 480)
-        elif(game_mode==game_modes[2]):
+        elif (game_mode == game_modes[2]):
             next_btn_img = cv.imread("assets/next_button.png")
             game_image = pasteImg(next_btn_img, game_image, 460, 480)
         elif (game_mode == game_modes[3]):
@@ -445,7 +445,7 @@ def main():
         if (game_mode == game_modes[1]):
             watcher_image = draw_UI_in_subject_hide_4_watcher(game_image)
             game_image = scene_transition(game_image)
-        elif(game_mode==game_modes[2]):
+        elif (game_mode == game_modes[2]):
             watcher_image = draw_UI_in_subject_open_4_watcher(game_image)
             game_image = scene_transition(game_image)
         else:
@@ -456,18 +456,20 @@ def main():
         game_image = draw_cursor(game_image, point_history, history_length)
 
         watcher_image = cv.resize(watcher_image, (1920, 1080))
-        watcher_image = draw_cursor(watcher_image, point_history, history_length)
+        watcher_image = draw_cursor(
+            watcher_image, point_history, history_length)
         # rキーで切り替えできる
         print(game_mode)
         if (debugmode):
             cv.imshow('OtEKAKI', debug_image)
-            cv.imshow('OtEKAKI for watcher',debug_image)
+            cv.imshow('OtEKAKI for watcher', debug_image)
         else:
             cv.imshow('OtEKAKI', game_image)
-            cv.imshow('OtEKAKI for watcher',watcher_image)
+            cv.imshow('OtEKAKI for watcher', watcher_image)
 
     cap.release()
     cv.destroyAllWindows()
+
 
 def select_mode(key, mode):
     number = -1
@@ -1063,6 +1065,7 @@ def draw_UI_in_subject_hide(image):
                               (50, 250), 40, text_color2)
     return image
 
+
 def draw_UI_in_subject_hide_4_watcher(image):
     global buttons_in_subject_hide_scene
     # image = draw_UI_background(image)
@@ -1103,15 +1106,18 @@ def draw_UI_in_subject_open(image):
         image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color2)
     return image
 
+
 def draw_UI_in_subject_open_4_watcher(image):
     global buttons_in_subject_open_scene
     global picture_subject_in_game
     global text_color
     image = draw_buttons(image, buttons_in_subject_open_scene)
-    image = putText_japanese(image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color)
+    image = putText_japanese(
+        image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color)
     image = putText_japanese(image, "プレイヤーがボタンをつかむとゲームが開始されます。",
                              (50, 250), 40, text_color)
-    image = putText_japanese2(image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color2)
+    image = putText_japanese2(
+        image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color2)
     image = putText_japanese2(image, "プレイヤーがボタンをつかむとゲームが開始されます。",
                               (50, 250), 40, text_color2)
     return image
