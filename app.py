@@ -424,7 +424,10 @@ def main():
             title_img = cv.imread("assets/title.png")
             game_image = pasteImg(start_btn_img, game_image, 460, 480)
             game_image = pasteImg(title_img, game_image, 0, 0)
-        elif (game_mode == game_modes[1] or game_mode == game_modes[2]):
+        elif (game_mode == game_modes[1]):
+            next_btn_img = cv.imread("assets/next_button.png")
+            game_image = pasteImg(next_btn_img, game_image, 460, 480)
+        elif (game_mode == game_modes[2]):
             next_btn_img = cv.imread("assets/next_button.png")
             game_image = pasteImg(next_btn_img, game_image, 460, 480)
         elif (game_mode == game_modes[3]):
@@ -435,20 +438,34 @@ def main():
             home_btn_img = cv.imread("assets/home_button.png")
             game_image = pasteImg(home_btn_img, game_image, 460, 480)
 
+        # is_fps_showedはfキーで切り替えられるようになっている
         if (is_fps_showed):
             game_image = draw_info(game_image, fps, mode, number)
 
-        game_image = scene_transition(game_image)
+        if (game_mode == game_modes[1]):
+            watcher_image = draw_UI_in_subject_hide_4_watcher(game_image)
+            game_image = scene_transition(game_image)
+        elif (game_mode == game_modes[2]):
+            watcher_image = draw_UI_in_subject_open_4_watcher(game_image)
+            game_image = scene_transition(game_image)
+        else:
+            game_image = scene_transition(game_image)
+            watcher_image = copy.deepcopy(game_image)
+
         game_image = cv.resize(game_image, (1920, 1080))
         game_image = draw_cursor(game_image, point_history, history_length)
-        # 画面反映 #############################################################
+
+        watcher_image = cv.resize(watcher_image, (1920, 1080))
+        watcher_image = draw_cursor(
+            watcher_image, point_history, history_length)
         # rキーで切り替えできる
         print(game_mode)
         if (debugmode):
-            cv.imshow('Hand Gesture Recognition', debug_image)
+            cv.imshow('OtEKAKI', debug_image)
+            cv.imshow('OtEKAKI for watcher', debug_image)
         else:
-            cv.imshow('Hand Gesture Recognition', game_image)
-            # cv.imshow('Hand Gesture Recognition', paint_canvas)
+            cv.imshow('OtEKAKI', game_image)
+            cv.imshow('OtEKAKI for watcher', watcher_image)
 
     cap.release()
     cv.destroyAllWindows()
@@ -1042,14 +1059,25 @@ def draw_UI_in_subject_hide(image):
     global buttons_in_subject_hide_scene
     # image = draw_UI_background(image)
     image = draw_buttons(image, buttons_in_subject_hide_scene)
-    image = putText_japanese(image, "ボタンをつかむとテーマが表示されます。",
+    image = putText_japanese(image, "ボタンをつかむと、お題が表示されます。",
+                             (50, 250), 40, text_color)
+    image = putText_japanese2(image, "ボタンをつかむと、お題が表示されます。",
+                              (50, 250), 40, text_color2)
+    return image
+
+
+def draw_UI_in_subject_hide_4_watcher(image):
+    global buttons_in_subject_hide_scene
+    # image = draw_UI_background(image)
+    image = draw_buttons(image, buttons_in_subject_hide_scene)
+    image = putText_japanese(image, "ボタンをつかむと、プレイヤーにだけ、お題が表示されます。",
                              (50, 250), 40, text_color)
     image = putText_japanese(
-        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color)
-    image = putText_japanese2(image, "ボタンをつかむとテーマが表示されます。",
+        image, "お題はこちら側には表示されません。", (50, 300), 50, text_color)
+    image = putText_japanese2(image, "ボタンをつかむと、プレイヤーにだけ、お題が表示されます。",
                               (50, 250), 40, text_color2)
     image = putText_japanese2(
-        image, "お題を当てる人は画面を見ないでください。", (50, 300), 50, text_color2)
+        image, "お題はこちら側には表示されません。", (50, 300), 50, text_color2)
     return image
 
 
@@ -1076,6 +1104,22 @@ def draw_UI_in_subject_open(image):
                               (50, 250), 40, text_color2)
     image = putText_japanese2(
         image, "準備ができたらボタンをつかんでください。", (50, 300), 40, text_color2)
+    return image
+
+
+def draw_UI_in_subject_open_4_watcher(image):
+    global buttons_in_subject_open_scene
+    global picture_subject_in_game
+    global text_color
+    image = draw_buttons(image, buttons_in_subject_open_scene)
+    image = putText_japanese(
+        image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color)
+    image = putText_japanese(image, "プレイヤーがボタンをつかむとゲームが開始されます。",
+                             (50, 250), 40, text_color)
+    image = putText_japanese2(
+        image, "お題はプレイヤーにのみ表示されています。", (50, 50), 40, text_color2)
+    image = putText_japanese2(image, "プレイヤーがボタンをつかむとゲームが開始されます。",
+                              (50, 250), 40, text_color2)
     return image
 
 
